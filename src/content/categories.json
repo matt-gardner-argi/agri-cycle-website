@@ -1,0 +1,27 @@
+[
+  {
+    "slug": "company-news",
+    "name": "Company News",
+    "count": 8
+  },
+  {
+    "slug": "press",
+    "name": "Press",
+    "count": 7
+  },
+  {
+    "slug": "tips-and-tricks",
+    "name": "Tips and Tricks",
+    "count": 29
+  },
+  {
+    "slug": "news",
+    "name": "News",
+    "count": 13
+  },
+  {
+    "slug": "partner-profile",
+    "name": "Partner Profile",
+    "count": 3
+  }
+]
