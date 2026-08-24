@@ -69,3 +69,9 @@ variable "cloudflare_proxied" {
   type        = bool
   default     = false
 }
+
+variable "letsencrypt_email" {
+  description = "Optional email for Let's Encrypt renewal notices. If empty, the VM uses Certbot's no-email registration mode."
+  type        = string
+  default     = ""
+}

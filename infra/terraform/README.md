@@ -21,7 +21,7 @@ terraform apply
 
 The Cloudflare token must have DNS read/write access to `agricycleenergy.app`. The GCP identity must be able to manage Compute Engine resources in project `argicycle`.
 
-The record is intentionally DNS-only (`cloudflare_proxied = false`) because the origin is configured for HTTP. Enable proxying only after adding an HTTPS origin or explicitly choosing the Cloudflare SSL mode for the zone.
+The record is intentionally DNS-only (`cloudflare_proxied = false`). The VM obtains and renews a Let's Encrypt certificate through Nginx, and redirects HTTP to HTTPS. Set `letsencrypt_email` to receive renewal notices; it defaults to Certbot's no-email registration mode.
 
 ## Validation
 
@@ -30,5 +30,5 @@ After apply, check the outputs and confirm:
 ```sh
 terraform output
 dig +short website.agricycleenergy.app
-curl --fail --head http://website.agricycleenergy.app/
+curl --fail --head https://website.agricycleenergy.app/
 ```

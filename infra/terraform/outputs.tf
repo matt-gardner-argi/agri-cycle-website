@@ -19,6 +19,6 @@ output "hostname" {
 }
 
 output "website_url" {
-  description = "HTTP URL for the deployed website."
-  value       = "http://${var.hostname}"
+  description = "HTTPS URL for the deployed website."
+  value       = "https://${var.hostname}"
 }

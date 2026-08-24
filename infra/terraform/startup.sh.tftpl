@@ -8,12 +8,13 @@ readonly APP_USER="agri-cycle"
 readonly APP_REPO="${app_repo}"
 readonly APP_BRANCH="${app_branch}"
 readonly PUBLIC_HOSTNAME="${hostname}"
+readonly LETSENCRYPT_EMAIL="${letsencrypt_email}"
 readonly RELEASE_DIR="$APP_ROOT/releases/$APP_BRANCH"
 
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
-apt-get install -y ca-certificates curl git nginx
+apt-get install -y ca-certificates certbot curl git nginx python3-certbot-nginx
 
 if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'Number(process.versions.node.split(".")[0])')" -lt 20 ]; then
   curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
@@ -92,12 +93,41 @@ nginx -t
 systemctl enable --now nginx
 systemctl reload nginx
 
+tls_ready=false
+for attempt in $(seq 1 20); do
+  if certbot certificates 2>/dev/null | grep -q "Domains:.*$PUBLIC_HOSTNAME"; then
+    tls_ready=true
+    break
+  fi
+
+  if [ -n "$LETSENCRYPT_EMAIL" ]; then
+    certbot_args=(--email "$LETSENCRYPT_EMAIL")
+  else
+    certbot_args=(--register-unsafely-without-email)
+  fi
+
+  if certbot --nginx --non-interactive --agree-tos "$${certbot_args[@]}" --redirect -d "$PUBLIC_HOSTNAME"; then
+    tls_ready=true
+    break
+  fi
+
+  sleep 30
+done
+
+if [ "$tls_ready" != true ]; then
+  echo "Let's Encrypt certificate setup did not complete for $PUBLIC_HOSTNAME" >&2
+  exit 1
+fi
+
+nginx -t
+systemctl reload nginx
+
 for attempt in $(seq 1 30); do
-  if curl --fail --silent --show-error http://127.0.0.1/ >/dev/null; then
+  if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then
     exit 0
   fi
   sleep 2
 done
 
-echo "The website did not become healthy at http://127.0.0.1/" >&2
+echo "The website did not become healthy at http://127.0.0.1:3000/" >&2
 exit 1

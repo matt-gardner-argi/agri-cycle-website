@@ -68,9 +68,10 @@ resource "google_compute_instance" "website" {
   }
 
   metadata_startup_script = templatefile("${path.module}/startup.sh.tftpl", {
-    app_branch = var.app_branch
-    app_repo   = var.app_repo
-    hostname   = var.hostname
+    app_branch        = var.app_branch
+    app_repo          = var.app_repo
+    hostname          = var.hostname
+    letsencrypt_email = var.letsencrypt_email
   })
 }
 
