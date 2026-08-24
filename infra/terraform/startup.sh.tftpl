@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+exec > >(tee -a /var/log/agri-cycle-website-startup.log | logger -t agri-cycle-website-startup -s 2>/dev/console) 2>&1
+
+readonly APP_ROOT="/srv/agri-cycle-website"
+readonly APP_USER="agri-cycle"
+readonly APP_REPO="${app_repo}"
+readonly APP_BRANCH="${app_branch}"
+readonly PUBLIC_HOSTNAME="${hostname}"
+readonly RELEASE_DIR="$APP_ROOT/releases/$APP_BRANCH"
+
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update
+apt-get install -y ca-certificates curl git nginx
+
+if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'Number(process.versions.node.split(".")[0])')" -lt 20 ]; then
+  curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
+  bash /tmp/nodesource_setup.sh
+  apt-get install -y nodejs
+fi
+
+if ! id "$APP_USER" >/dev/null 2>&1; then
+  useradd --system --home-dir "$APP_ROOT" --shell /usr/sbin/nologin "$APP_USER"
+fi
+
+install -d -o "$APP_USER" -g "$APP_USER" "$APP_ROOT" "$APP_ROOT/releases"
+
+if [ ! -d "$RELEASE_DIR/.git" ]; then
+  git clone --depth 1 --branch "$APP_BRANCH" "$APP_REPO" "$RELEASE_DIR"
+fi
+
+cd "$RELEASE_DIR"
+npm ci
+npm run build
+
+ln -sfn "$RELEASE_DIR" "$APP_ROOT/current"
+chown -R "$APP_USER:$APP_USER" "$APP_ROOT"
+
+cat >/etc/systemd/system/agri-cycle-website.service <<'UNIT'
+[Unit]
+Description=Agri-Cycle Website
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agri-cycle
+Group=agri-cycle
+WorkingDirectory=/srv/agri-cycle-website/current
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/node /srv/agri-cycle-website/current/node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+cat >/etc/nginx/sites-available/agri-cycle-website <<NGINX
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name $PUBLIC_HOSTNAME _;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+NGINX
+
+if [ -e /etc/nginx/sites-enabled/default ]; then
+  mv /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default.disabled
+fi
+
+if [ ! -e /etc/nginx/sites-enabled/agri-cycle-website ]; then
+  ln -s /etc/nginx/sites-available/agri-cycle-website /etc/nginx/sites-enabled/agri-cycle-website
+fi
+
+systemctl daemon-reload
+systemctl enable --now agri-cycle-website
+nginx -t
+systemctl enable --now nginx
+systemctl reload nginx
+
+for attempt in $(seq 1 30); do
+  if curl --fail --silent --show-error http://127.0.0.1/ >/dev/null; then
+    exit 0
+  fi
+  sleep 2
+done
+
+echo "The website did not become healthy at http://127.0.0.1/" >&2
+exit 1
