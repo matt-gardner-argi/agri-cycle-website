@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Contact",
   description:
     "We are excited to hear from you. Whether it's a service quote, a social media collaboration, or you're simply curious about what we do — get in touch.",
+  alternates: { canonical: "/contact" },
 };
 
 const quickLinks = [

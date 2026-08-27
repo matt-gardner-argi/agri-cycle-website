@@ -5,11 +5,21 @@ import { useMemo, useState } from "react";
 import { Search, SearchX } from "lucide-react";
 import { categories, posts as allPosts, type Post } from "@/content/posts";
 import { PostCard } from "./PostCard";
+import { useServerRendered } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 const PAGE = 9;
 
-export function BlogBrowser({ initialCategory = "all" }: { initialCategory?: string }) {
+export function BlogBrowser({
+  initialCategory = "all",
+  headingLevel,
+}: {
+  initialCategory?: string;
+  headingLevel?: 2 | 3;
+}) {
+  // Post cards are the page's content, so the server renders them rather than
+  // an empty grid that fills in after hydration.
+  const fromServer = useServerRendered();
   const [cat, setCat] = useState(initialCategory);
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState(PAGE);
@@ -102,7 +112,7 @@ export function BlogBrowser({ initialCategory = "all" }: { initialCategory?: str
               <motion.div
                 key={post.slug}
                 layout
-                initial={{ opacity: 0, y: 22, scale: 0.97 }}
+                initial={fromServer ? false : { opacity: 0, y: 22, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{
@@ -111,7 +121,7 @@ export function BlogBrowser({ initialCategory = "all" }: { initialCategory?: str
                   ease: [0.16, 1, 0.3, 1],
                 }}
               >
-                <PostCard post={post} priority={i < 3} />
+                <PostCard post={post} priority={i < 3} headingLevel={headingLevel} />
               </motion.div>
             ))}
           </AnimatePresence>

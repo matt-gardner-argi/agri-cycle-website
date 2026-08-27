@@ -10,21 +10,27 @@ import { TiltCard } from "@/components/ui/TiltCard";
 import { RevealGroup, RevealItem } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
+/**
+ * `ring` uses a plain `hover:` variant, not `group-hover:`. It is applied to the
+ * same element that carries the `group` class, and Tailwind compiles
+ * `group-hover:` to a descendant selector — so the accent border never once
+ * appeared on any of the three cards.
+ */
 const accents = {
   leaf: {
-    ring: "group-hover:border-leaf/60",
+    ring: "hover:border-leaf/60",
     glow: "from-leaf/35",
     chip: "bg-leaf text-ink",
     dot: "text-leaf-deep",
   },
   sky: {
-    ring: "group-hover:border-sky/60",
+    ring: "hover:border-sky/60",
     glow: "from-sky/35",
     chip: "bg-sky text-ink",
     dot: "text-sky",
   },
   sun: {
-    ring: "group-hover:border-sun/60",
+    ring: "hover:border-sun/60",
     glow: "from-sun/35",
     chip: "bg-sun text-ink",
     dot: "text-sun",
@@ -42,12 +48,21 @@ export function ServiceCards({ compact = false }: { compact?: boolean }) {
         return (
           <RevealItem key={svc.slug} as="article">
             <TiltCard intensity={6} className="h-full">
+              {/*
+                The card lifts, brightens and zooms its photo on hover, which
+                reads as "click me" — but only the link at the bottom used to
+                navigate. Rather than take the motion away, the link now covers
+                the card (`after:absolute after:inset-0`). One link, one target,
+                the whole card, and no nested interactive elements to confuse a
+                screen reader.
+              */}
               <div
                 onMouseEnter={() => setHovered(svc.slug)}
                 onMouseLeave={() => setHovered(null)}
                 className={cn(
-                  "group relative flex h-full flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white transition-all duration-500",
+                  "group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border border-ink/10 bg-white transition-all duration-500",
                   "hover:-translate-y-1.5 hover:shadow-[0_36px_70px_-40px_rgba(7,23,17,0.5)]",
+                  "focus-within:ring-2 focus-within:ring-leaf focus-within:ring-offset-2",
                   a.ring
                 )}
               >
@@ -95,7 +110,7 @@ export function ServiceCards({ compact = false }: { compact?: boolean }) {
 
                   <Link
                     href="/quote"
-                    className="mt-auto inline-flex items-center gap-2 pt-7 text-[0.8125rem] font-semibold text-ink transition-colors hover:text-leaf-deep focus-ring"
+                    className="mt-auto inline-flex items-center gap-2 pt-7 text-[0.8125rem] font-semibold text-ink transition-colors group-hover:text-leaf-deep after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus:outline-none"
                   >
                     <span
                       className={cn(

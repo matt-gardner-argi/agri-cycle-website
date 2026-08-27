@@ -12,27 +12,32 @@ export const metadata: Metadata = {
   title: "What Is Anaerobic Digestion?",
   description:
     "A biological process in which microorganisms break down organic material in the absence of oxygen, capturing methane for electricity, heat and fertilizer.",
+  alternates: { canonical: "/about/anaerobic-digestion" },
 };
 
 const outputs = [
   {
     name: "Electricity",
     body: "Captured biogas is combusted in combined heat and power units. Surplus power is distributed through the grid.",
+    alt: "Aerial view of two red circular digester tanks with black domed covers, ringed by farm fields and woodland.",
     image: "/img/site/digester.jpg",
   },
   {
     name: "Heat",
     body: "Waste heat from generation warms farm buildings and digester vessels — displacing thousands of gallons of heating oil.",
+    alt: "Overhead satellite view of a digester site: three circular tanks beside long metal-roofed farm buildings.",
     image: "/img/site/eae-map.jpg",
   },
   {
     name: "Fertilizer & bedding",
     body: "Bio-separators recover liquid and solid digestate for use as rich fertilizer, soil amendment and animal bedding.",
+    alt: "Two cupped hands holding a mound of dry, fibrous brown digestate, with a larger pile heaped behind.",
     image: "/img/site/digestate.jpg",
   },
   {
     name: "Renewable fuels",
     body: "Biogas can also be upgraded into renewable natural gas and transportation fuels.",
+    alt: "A white tractor unit hitched to a polished stainless steel tank trailer, parked in front of a concrete bunker silo.",
     image: "/img/site/tanker-truck.jpg",
   },
 ];
@@ -102,7 +107,7 @@ export default function AnaerobicPage() {
                   <div className="relative h-36 overflow-hidden">
                     <Image
                       src={o.image}
-                      alt=""
+                      alt={o.alt}
                       fill
                       sizes="(max-width: 640px) 100vw, 25vw"
                       className="object-cover transition-transform duration-[1000ms] group-hover:scale-108"

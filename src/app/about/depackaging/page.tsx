@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Our Depackaging Solution",
   description:
     "Our de-packaging technology separates organic content from plastic, metal and cardboard packaging, so materials can be composted or recycled rather than wasted.",
+  alternates: { canonical: "/about/depackaging" },
 };
 
 export default function DepackagingPage() {
@@ -77,7 +78,8 @@ export default function DepackagingPage() {
                       src="/img/site/depackager.jpg"
                       alt="The depackager: intake trough on the left, separator mechanism on the right"
                       fill
-                      priority
+                      loading="eager"
+                      fetchPriority="high"
                       sizes="(max-width: 1024px) 100vw, 45vw"
                       className="object-cover"
                     />

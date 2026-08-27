@@ -15,26 +15,31 @@ export const metadata: Metadata = {
   title: "Food Waste Collection Services",
   description:
     "Toter service, high-volume liquids, roll-off and emergency collection for grocers, restaurants, schools, hospitals, breweries and producers nationwide.",
+  alternates: { canonical: "/services" },
 };
 
 const fleet = [
   {
     image: "/img/site/truck-rendering.png",
+    alt: "Illustration of an orange and grey rear-loader with an enclosed body and hydraulic arms down each side.",
     name: "Rendering trucks",
     body: "Small rear-loaders with tipper buckets, made for city streets and tight loading docks.",
   },
   {
     image: "/img/site/truck-liquids.png",
+    alt: "Illustration of a white tractor unit hauling a long pale blue cylindrical tank on a flatbed trailer.",
     name: "Liquid tankers",
     body: "Vacuum-pump tankers hauling up to 8,500 gallons of slurry, grease and liquid by-products.",
   },
   {
     image: "/img/site/truck-longhaul.png",
+    alt: "Illustration of a white tractor unit with its ribbed green trailer tipped up at a steep angle to unload.",
     name: "Long-haul trailers",
     body: "Tractor-trailers moving up to 65 yards of solids between sites and processing partners.",
   },
   {
     image: "/img/site/truck-rolloff.png",
+    alt: "Illustration of a white truck tilting an open-topped orange roll-off container down off its rails.",
     name: "Roll-off containers",
     body: "For mass loss, recalls and palletized packaged food waste — anywhere in the country.",
   },
@@ -47,9 +52,9 @@ export default function ServicesPage() {
         eyebrow="Services"
         title="Routine loss or one-off emergency — we have a solution"
         highlight={["solution"]}
-        image="/img/site/fleet-hero.jpg"
+        image="/img/site/containers.jpg"
         crumbs={[{ label: "Services" }]}
-        intro="Whether you are experiencing routine loss or a one-off emergency, chances are we have the service for you. Agri-Cycle provides collection to all food waste producers throughout the United States."
+        intro="Whether you are experiencing routine loss or a one-off emergency, chances are we have the service for you. We run scheduled route collections in 14 states and build customized programs for producers nationally."
         size="lg"
       >
         <Button href="/quote" size="lg" withArrow>
@@ -113,7 +118,7 @@ export default function ServicesPage() {
                     <div className="relative h-24">
                       <Image
                         src={f.image}
-                        alt=""
+                        alt={f.alt}
                         fill
                         sizes="(max-width: 640px) 100vw, 22rem"
                         className="object-contain object-left transition-transform duration-700 group-hover:translate-x-1.5"

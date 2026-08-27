@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Our Team",
   description:
     "The leadership team behind Agri-Cycle — from route drivers turned general managers to public policy specialists.",
+  alternates: { canonical: "/about/team" },
 };
 
 export default function TeamPage() {

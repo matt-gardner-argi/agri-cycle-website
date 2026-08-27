@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "Why Agri-Cycle",
   description:
     "Reasons to keep wasted food out of the trash: renewable energy, soil amendment, animal feed, longer landfill lifespans and lower disposal costs.",
+  alternates: { canonical: "/about/why-agri-cycle" },
 };
 
 const icons = { zap: Zap, shield: ShieldCheck, dollar: DollarSign } as const;
@@ -131,9 +132,9 @@ export default function WhyPage() {
 
               <Reveal delay={0.3}>
                 <p className="mt-8 text-[0.9375rem] leading-relaxed text-ink/65">
-                  Interested in learning more about the benefits of working with Agri-Cycle? We provide
-                  solutions from Maine to California and would welcome the opportunity to talk with you
-                  more about our service.
+                  Interested in learning more about the benefits of working with Agri-Cycle? We run
+                  scheduled route collections in 14 states and build customized programs nationally —
+                  we&apos;d welcome the opportunity to talk with you more about our service.
                 </p>
               </Reveal>
             </div>

@@ -65,7 +65,18 @@ variable "app_branch" {
 }
 
 variable "cloudflare_proxied" {
-  description = "Whether Cloudflare should proxy the DNS record. Keep false while the origin is HTTP-only."
+  description = <<-EOT
+    Whether Cloudflare should proxy the DNS record.
+
+    The origin now terminates TLS (Certbot) and negotiates HTTP/2, so proxying is
+    safe to turn on. Doing so is also the only way to serve HTTP/3 here: Ubuntu
+    24.04 ships nginx 1.24, which has no QUIC support, whereas Cloudflare's edge
+    speaks HTTP/3 to visitors with no origin change at all.
+
+    Before flipping this to true, set the zone's SSL/TLS mode to "Full (strict)".
+    Leaving it on "Flexible" would put the edge on plain HTTP to an origin that
+    redirects HTTP to HTTPS, which loops.
+  EOT
   type        = bool
   default     = false
 }

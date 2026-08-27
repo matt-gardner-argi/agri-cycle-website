@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AlertCircle, Check, Mail, Phone, Send } from "lucide-react";
 import { site } from "@/content/site";
 import { Button } from "@/components/ui/Button";
+import { useServerRendered } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 type Fields = {
@@ -54,6 +55,9 @@ export function EnquiryForm({
   const [values, setValues] = useState<Fields>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({});
   const [sent, setSent] = useState(false);
+  // The form is the entire point of /quote and /contact. Animating it in from
+  // opacity 0 meant the server sent a page with no form in it.
+  const fromServer = useServerRendered();
 
   const showOps = kind !== "contact";
 
@@ -109,7 +113,7 @@ export function EnquiryForm({
         {sent ? (
           <motion.div
             key="sent"
-            initial={{ opacity: 0, y: 16 }}
+            initial={fromServer ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             className="rounded-3xl border border-leaf/40 bg-leaf/10 p-8 text-center sm:p-12"
           >
@@ -142,8 +146,11 @@ export function EnquiryForm({
           <motion.form
             key="form"
             onSubmit={submit}
+            // Controls below carry the native `required` attribute for semantics; without
+            // noValidate the browser would block submit and show its own bubble, pre-empting
+            // the inline errors this component renders and the mailto handoff.
             noValidate
-            initial={{ opacity: 0 }}
+            initial={fromServer ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             className="rounded-3xl border border-ink/10 bg-white p-7 shadow-[0_30px_70px_-55px_rgba(7,23,17,0.5)] sm:p-9"
           >
@@ -198,6 +205,8 @@ export function EnquiryForm({
                       id="stream"
                       value={values.stream}
                       onChange={(e) => set("stream", e.target.value)}
+                      aria-invalid={!!errors.stream}
+                      aria-describedby={errors.stream ? "stream-error" : undefined}
                       className="h-12 cursor-pointer rounded-xl border border-ink/12 bg-cream/35 px-4 text-[0.9375rem] text-ink transition-colors focus:border-leaf focus:bg-white focus:outline-none"
                     >
                       <option value="">Select one…</option>
@@ -207,6 +216,7 @@ export function EnquiryForm({
                         </option>
                       ))}
                     </select>
+                    {errors.stream && <FieldError id="stream-error">{errors.stream}</FieldError>}
                   </div>
                   <Field
                     label="Roughly how much waste?"
@@ -229,9 +239,12 @@ export function EnquiryForm({
                 <textarea
                   id="message"
                   rows={5}
+                  required
+                  aria-required
                   value={values.message}
                   onChange={(e) => set("message", e.target.value)}
                   aria-invalid={!!errors.message}
+                  aria-describedby={errors.message ? "message-error" : undefined}
                   placeholder="Tell us about your operation, your current disposal setup, and what you're hoping to change."
                   className={cn(
                     "resize-y rounded-xl border bg-cream/35 px-4 py-3.5 text-[0.9375rem] leading-relaxed text-ink transition-colors placeholder:text-ink/35 focus:bg-white focus:outline-none",
@@ -240,7 +253,7 @@ export function EnquiryForm({
                       : "border-ink/12 focus:border-leaf"
                   )}
                 />
-                {errors.message && <FieldError>{errors.message}</FieldError>}
+                {errors.message && <FieldError id="message-error">{errors.message}</FieldError>}
               </div>
             </div>
 
@@ -302,6 +315,7 @@ function Field({
   className?: string;
 }) {
   const id = label.toLowerCase().replace(/[^a-z]+/g, "-");
+  const errorId = `${id}-error`;
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <label htmlFor={id} className="text-[0.8125rem] font-semibold tracking-tight text-ink/75">
@@ -311,24 +325,28 @@ function Field({
       <input
         id={id}
         type={type}
+        required={required}
+        aria-required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
         aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         className={cn(
           "h-12 rounded-xl border bg-cream/35 px-4 text-[0.9375rem] text-ink transition-colors placeholder:text-ink/35 focus:bg-white focus:outline-none",
           error ? "border-sun focus:border-sun" : "border-ink/12 focus:border-leaf"
         )}
       />
-      {error && <FieldError>{error}</FieldError>}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }
 
-function FieldError({ children }: { children: React.ReactNode }) {
+function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <motion.p
+      id={id}
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       className="inline-flex items-center gap-1.5 text-[0.75rem] font-medium text-sun"

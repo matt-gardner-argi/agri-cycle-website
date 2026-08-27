@@ -41,7 +41,7 @@ export function ParallaxImage({
           alt={alt}
           fill
           sizes={sizes}
-          priority={priority}
+          loading={priority ? "eager" : "lazy"}
           className={cn("object-cover", imgClassName)}
         />
       </motion.div>

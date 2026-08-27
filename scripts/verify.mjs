@@ -241,8 +241,22 @@ async function checkPage(context, route, vp) {
   }
   if (!expect404) {
     for (const e of consoleErrors.slice(0, 3)) {
-      const bucket = LCP_ADVISORY.test(e) ? advisories : issues;
-      bucket.push({ route, vp: vp.name, kind: "console", detail: e.split("\n")[0] });
+      // This pass scrolls every page top to bottom, so Next's LCP heuristic
+      // fires on whichever image the scroll happened to land on. Only report
+      // the hint when the image it names has not already been given one.
+      if (LCP_ADVISORY.test(e)) {
+        const src = e.match(/src "([^"]+)"/)?.[1];
+        const alreadyEager = src && (await page
+          .evaluate((s) => {
+            const img = [...document.querySelectorAll("img")].find((i) => i.src.includes(s));
+            return !img || img.loading === "eager" || img.fetchPriority === "high";
+          }, src)
+          .catch(() => false));
+        if (alreadyEager) continue;
+        advisories.push({ route, vp: vp.name, kind: "console", detail: e.split("\n")[0] });
+        continue;
+      }
+      issues.push({ route, vp: vp.name, kind: "console", detail: e.split("\n")[0] });
     }
     for (const f of [...new Set(failedRequests)].slice(0, 4)) {
       issues.push({ route, vp: vp.name, kind: "request", detail: f });
@@ -374,23 +388,41 @@ async function checkInteractions(context) {
     if (before === after) throw new Error(`result did not change (${before})`);
   });
 
-  await step("assumptions panel toggles", async () => {
-    const btn = page.getByRole("button", { name: /assumptions behind these numbers/i });
+  await step("methodology panel toggles and cites its sources", async () => {
+    const btn = page.getByRole("button", { name: /the model, the factors and the sources/i });
     await btn.scrollIntoViewIfNeeded();
     await btn.click();
     await page.waitForTimeout(500);
-    await page.getByText(/EPA WARM/i).first().waitFor({ timeout: 4000 });
+    // Every factor has to carry a link a salesperson can follow.
+    await page.getByRole("link", { name: /EPA Waste Reduction Model/i }).first().waitFor({ timeout: 4000 });
+    const sourced = await page.locator("table a[href^='https://www.epa.gov'], table a[href^='https://www.eia.gov']").count();
+    if (sourced < 6) throw new Error(`only ${sourced} factor rows carry a published source link`);
   });
 
-  await step("testimonial carousel advances", async () => {
-    const next = page.getByRole("button", { name: "Next testimonial" });
-    await next.scrollIntoViewIfNeeded();
+  await step("testimonial strip scrolls, pauses on hover and opens the full quote", async () => {
+    const strip = page.locator(".group\\/marquee").filter({ hasText: "Read the full quote" }).first();
+    await strip.scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(600);
+
+    const track = strip.locator("> div").first();
+    const offset = () => track.evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
+    const a = await offset();
+    await page.waitForTimeout(900);
+    if (Math.abs((await offset()) - a) < 1) throw new Error("strip is not scrolling");
+
+    await strip.hover();
     await page.waitForTimeout(400);
-    const before = await page.locator("blockquote").first().innerText();
-    await next.click();
-    await page.waitForTimeout(800);
-    const after = await page.locator("blockquote").first().innerText();
-    if (before === after) throw new Error("quote did not change");
+    const held = await offset();
+    await page.waitForTimeout(900);
+    if (Math.abs((await offset()) - held) > 1) throw new Error("strip did not pause on hover");
+
+    // The dialog is portalled to <body>; the section's stacking context used to trap it.
+    await strip.getByRole("button", { name: /Read the full quote/i }).first().click();
+    const dialog = page.getByRole("dialog");
+    await dialog.waitFor({ state: "visible", timeout: 4000 });
+    await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "detached", timeout: 4000 });
   });
 
   await step("FAQ accordion expands", async () => {
@@ -444,18 +476,37 @@ async function checkInteractions(context) {
     await page.getByText(/We need an email address/i).waitFor({ timeout: 4000 });
   });
 
-  await step("before/after slider responds to the range input", async () => {
+  await step("before/after slider moves by press, by drag and by keyboard", async () => {
     await page.goto(BASE + "/about/history", { waitUntil: "load" });
     await page.waitForTimeout(700);
     const slider = page.getByRole("slider", { name: /Compare the farm then and now/i });
     await slider.scrollIntoViewIfNeeded();
-    await slider.fill("20");
-    await page.waitForTimeout(400);
-    const clip = await page
-      .locator("div[style*='clip-path']")
-      .first()
-      .evaluate((el) => el.style.clipPath);
-    if (!clip.includes("80")) throw new Error(`clip-path did not move: ${clip}`);
+    await page.waitForTimeout(500);
+    const at = () => slider.getAttribute("aria-valuenow").then(Number);
+    const box = await slider.boundingBox();
+
+    // Press anywhere on the frame — the defect was that only dragging the photo worked.
+    await page.mouse.click(box.x + box.width * 0.25, box.y + box.height / 2);
+    await page.waitForTimeout(300);
+    const pressed = await at();
+    if (Math.abs(pressed - 25) > 4) throw new Error(`press did not jump the divider (${pressed})`);
+
+    // Drag from the handle, which used to snap to the extremes.
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2, { steps: 12 });
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    const dragged = await at();
+    if (Math.abs(dragged - 70) > 5) throw new Error(`drag did not track the pointer (${dragged})`);
+
+    await slider.focus();
+    await page.keyboard.press("ArrowLeft");
+    await page.waitForTimeout(200);
+    if ((await at()) >= dragged) throw new Error("arrow key did not move the divider");
+
+    const clip = await page.locator("div[style*='clip-path']").first().evaluate((el) => el.style.clipPath);
+    if (!/inset\(0(px)? [\d.]+% 0(px)? 0(px)?\)/.test(clip)) throw new Error(`clip-path not tracking: ${clip}`);
   });
 
   await page.close();
@@ -471,10 +522,18 @@ async function checkMobileNav(browser) {
     await page.waitForTimeout(800);
     await page.getByRole("button", { name: "Open menu" }).click();
     await page.waitForTimeout(700);
-    await page
-      .getByRole("complementary")
+    const drawer = page.getByRole("dialog", { name: /menu/i });
+    await drawer.waitFor({ state: "visible", timeout: 5000 });
+    await drawer
       .getByRole("link", { name: "Processing Partners" })
       .waitFor({ state: "visible", timeout: 5000 });
+    // The drawer promises aria-modal, so the page behind it must be inert.
+    const leaked = await page.evaluate(() =>
+      [...document.body.children].filter(
+        (el) => !el.matches("[role=dialog], script, next-route-announcer") && !el.inert && el.querySelector("a[href]")
+      ).length
+    );
+    if (leaked) throw new Error(`${leaked} background region(s) still reachable behind the modal drawer`);
     await page.screenshot({ path: path.join(OUT, "mobile", "_drawer-open.png") });
     await page.getByRole("button", { name: "Close menu" }).click();
     await page.waitForTimeout(500);

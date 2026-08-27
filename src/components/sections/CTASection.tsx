@@ -7,7 +7,7 @@ import { ParallaxImage } from "@/components/ui/Parallax";
 export function CTASection({
   title = "You've got the power.",
   body = "Call us today to discuss how we can customize an efficient collection service to meet your specific needs.",
-  image = "/img/hero/tanker.jpg",
+  image = "/img/site/digester.jpg",
 }: {
   title?: string;
   body?: string;

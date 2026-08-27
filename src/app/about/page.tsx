@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: "About Us",
   description:
     "Agri-Cycle was established in 2013 to support sister company Exeter Agri-Energy, an offshoot of Stonyvale Farm, a fifth-generation dairy farm in Exeter, Maine.",
+  alternates: { canonical: "/about" },
 };
 
 const cards = [

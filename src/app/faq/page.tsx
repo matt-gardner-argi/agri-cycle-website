@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Frequently Asked Questions",
   description:
     "Costs, containers, odor, staff training, the depackager and what happens to your food scraps at the processing facility.",
+  alternates: { canonical: "/faq" },
 };
 
 const groups = ["Getting started", "What we accept", "Day to day", "Where it goes"] as const;

@@ -8,11 +8,20 @@ export function PostCard({
   post,
   featured = false,
   priority = false,
+  headingLevel = 3,
 }: {
   post: Post;
   featured?: boolean;
   priority?: boolean;
+  /**
+   * Every route that grids these cards under an `h2` section heading leaves this
+   * at 3. `/blog` stacks them straight under its `h1` with no `h2` in between,
+   * so it passes 2 — an `h3` there skips a level for screen-reader users.
+   */
+  headingLevel?: 2 | 3;
 }) {
+  const Title = `h${headingLevel}` as const;
+
   return (
     <article className="h-full">
       <Link
@@ -33,7 +42,7 @@ export function PostCard({
             src={post.image}
             alt=""
             fill
-            priority={priority}
+            loading={priority ? "eager" : "lazy"}
             sizes={featured ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 100vw, 33vw"}
             className="object-cover transition-transform duration-[1100ms] ease-out group-hover:scale-106"
           />
@@ -63,7 +72,7 @@ export function PostCard({
             </span>
           </div>
 
-          <h3
+          <Title
             className={cn(
               "mt-3 leading-snug transition-colors duration-300 group-hover:text-leaf-deep",
               featured
@@ -72,7 +81,7 @@ export function PostCard({
             )}
           >
             {post.title}
-          </h3>
+          </Title>
 
           <p
             className={cn(

@@ -14,6 +14,7 @@ import { postsInCategory } from "@/content/posts";
 export const metadata: Metadata = {
   title: "News",
   description: pressRelease.standfirst,
+  alternates: { canonical: "/news" },
 };
 
 export default function NewsPage() {
@@ -30,7 +31,7 @@ export default function NewsPage() {
       <PageHero
         eyebrow={`${pressRelease.eyebrow} · ${pressRelease.dateLabel}`}
         title={pressRelease.title}
-        image="/img/site/truck-69.jpg"
+        image="/img/hero/eae-aerial.jpg"
         crumbs={[{ label: "News" }]}
         intro={pressRelease.standfirst}
         size="lg"

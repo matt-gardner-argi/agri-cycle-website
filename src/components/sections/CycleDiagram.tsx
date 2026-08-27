@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Apple, Leaf, Package, Sprout, Truck, Waves, Zap } from "lucide-react";
 import { cycle } from "@/content/site";
 import { Eyebrow } from "@/components/ui/SectionHeading";
-import { Reveal } from "@/components/ui/Reveal";
+import { useServerRendered, Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 const icons = {
@@ -27,6 +27,9 @@ const CENTER = 210;
  * the section is alive before any interaction.
  */
 export function CycleDiagram() {
+  // The wheel's readout and side panel carry the seven-stage explanation; they
+  // belong in the server HTML, not only after hydration.
+  const fromServer = useServerRendered();
   const [active, setActive] = useState(0);
   const [locked, setLocked] = useState(false);
   const reduce = useReducedMotion();
@@ -183,9 +186,9 @@ export function CycleDiagram() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={current.key}
-                  initial={{ opacity: 0, scale: 0.92, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
+                  initial={fromServer ? false : { opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 >
                   <span className="mx-auto mb-3 grid size-10 place-items-center rounded-full bg-white/10 text-leaf-bright">
@@ -208,7 +211,7 @@ export function CycleDiagram() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={current.key}
-                  initial={{ opacity: 0, y: 14 }}
+                  initial={fromServer ? false : { opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -221,7 +224,10 @@ export function CycleDiagram() {
                 </motion.div>
               </AnimatePresence>
 
-              {/* Progress pips */}
+              {/* Progress pips. A 4px-tall button is an unhittable target on a
+                  phone, so the button is a 44px touch target pulled back out of
+                  the flow with negative margins — the row still measures 4px and
+                  the bar paints exactly where it did. */}
               <div className="mt-7 flex gap-1.5">
                 {cycle.map((n, i) => (
                   <button
@@ -232,11 +238,17 @@ export function CycleDiagram() {
                       setActive(i);
                       setLocked(true);
                     }}
-                    className={cn(
-                      "h-1 flex-1 cursor-pointer rounded-full transition-colors duration-300 focus-ring",
-                      i === active ? "bg-leaf" : "bg-white/15 hover:bg-white/30"
-                    )}
-                  />
+                    className="group -my-5 flex h-11 flex-1 cursor-pointer items-center focus-visible:outline-none"
+                  >
+                    {/* The focus ring belongs on the bar, not on the invisible
+                        44px box it sits inside — hence outline-none above. */}
+                    <span
+                      className={cn(
+                        "h-1 w-full rounded-full transition-colors duration-300 group-focus-visible:outline-2 group-focus-visible:outline-offset-3 group-focus-visible:outline-leaf",
+                        i === active ? "bg-leaf" : "bg-white/15 hover:bg-white/30"
+                      )}
+                    />
+                  </button>
                 ))}
               </div>
             </div>

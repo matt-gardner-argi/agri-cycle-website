@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Request a Quote",
   description:
     "Complete the form to give us some initial information about your operation. We will get back to you within three business days.",
+  alternates: { canonical: "/quote" },
 };
 
 const expectations = [
@@ -37,7 +38,7 @@ export default function QuotePage() {
         eyebrow="Request a quote"
         title="Let's build a plan that fits your operation"
         highlight={["operation"]}
-        image="/img/site/truck-69.jpg"
+        image="/img/site/employee.jpg"
         crumbs={[{ label: "Request a quote" }]}
         intro={quoteIntro}
       />

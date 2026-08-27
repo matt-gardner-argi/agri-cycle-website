@@ -8,6 +8,16 @@ import { cn } from "@/lib/utils";
 
 export type Crumb = { label: string; href?: string };
 
+/* At 12px the crumb anchors collapsed to their line box — 33.6x15 for "Home" —
+   far under the 44px target minimum. Padding grows the hit area and the equal
+   negative margin gives it straight back to the layout, so the row sits exactly
+   where it did. `inline-block` matters: a bare inline box with vertical padding
+   repaints its glyphs with different antialiasing, which a screenshot diff picks
+   up; as an atomic box the render is identical to the pixel. Nothing new is
+   painted, so the photograph underneath stays clean. */
+const crumbLink =
+  "-mx-2 -my-[14.5px] inline-block px-2 py-[14.5px] transition-colors hover:text-leaf-bright focus-ring";
+
 /** Shared interior-page header: photo, gradient wash, breadcrumb, kinetic title. */
 export function PageHero({
   eyebrow,
@@ -44,7 +54,8 @@ export function PageHero({
         src={image}
         alt=""
         fill
-        priority
+        loading="eager"
+        fetchPriority="high"
         sizes="100vw"
         style={{ objectPosition }}
         className="-z-30 scale-105 object-cover"
@@ -72,7 +83,7 @@ export function PageHero({
                 )}
               >
                 <li>
-                  <Link href="/" className="transition-colors hover:text-leaf-bright focus-ring">
+                  <Link href="/" className={crumbLink}>
                     Home
                   </Link>
                 </li>
@@ -80,7 +91,7 @@ export function PageHero({
                   <li key={c.label} className="flex items-center gap-1.5">
                     <ChevronRight aria-hidden className="size-3 text-white/25" />
                     {c.href ? (
-                      <Link href={c.href} className="transition-colors hover:text-leaf-bright focus-ring">
+                      <Link href={c.href} className={crumbLink}>
                         {c.label}
                       </Link>
                     ) : (

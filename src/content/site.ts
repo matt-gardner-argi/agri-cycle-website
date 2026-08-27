@@ -3,6 +3,25 @@
  * live agricycleenergy.com pages so the new build stays factually identical.
  */
 
+/**
+ * The domain this site will finally serve from. Canonical URLs always point
+ * here, so a staging copy never competes with production in the index.
+ */
+export const PRODUCTION_URL = "https://www.agricycleenergy.com";
+
+/**
+ * Where this particular build is served. Set `NEXT_PUBLIC_SITE_URL` on staging
+ * (e.g. https://website.agricycleenergy.app) and leave it unset in production.
+ */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? PRODUCTION_URL).replace(/\/+$/, "");
+
+/**
+ * Only the production domain is allowed into search indexes. Every other host
+ * — staging, the Cloudflare tunnel, preview builds — serves `noindex`, which is
+ * what actually keeps duplicates out of Google.
+ */
+export const IS_PRODUCTION_HOST = SITE_URL === PRODUCTION_URL;
+
 export const site = {
   name: "Agri-Cycle",
   legalName: "Agri-Cycle Energy, LLC",
@@ -10,7 +29,8 @@ export const site = {
   claim: "You've got the power.",
   description:
     "Agri-Cycle is the premier organics recycling service in the United States. We convert wasted food and other organic streams into renewable energy, rich compost, and animal feed.",
-  url: "http://website.localhost:3000",
+  url: SITE_URL,
+  productionUrl: PRODUCTION_URL,
   phone: "1-800-850-9560",
   phoneHref: "tel:+18008509560",
   email: "info@agricycleenergy.com",
@@ -53,7 +73,7 @@ export const nav: NavItem[] = [
       {
         label: "Service Area",
         href: "/service-area",
-        description: "Maine to California — and does your state have a ban?",
+        description: "14 states on route, custom programs nationally — plus state ban rules.",
       },
       {
         label: "Frequently Asked Questions",
@@ -105,11 +125,24 @@ export const nav: NavItem[] = [
   { label: "Contact", href: "/contact" },
 ];
 
+/**
+ * How we describe our footprint. "Maine to California" over-promised a
+ * scheduled route everywhere; these two lines separate what we run on a route
+ * from what we build to order, which is the honest version of the same reach.
+ */
+export const serviceArea = {
+  headline: "14 states on route. The rest of the country, by design.",
+  short: "Scheduled route collections in 14 states, customized programs nationally.",
+  long: "We run scheduled route collections in 14 states. Outside that footprint we build customized programs — palletized freight, roll-off, recall and emergency work — for producers anywhere in the country.",
+  routed: "14 states",
+  national: "customized programs nationally",
+} as const;
+
 /** Small stat strip used under the hero and on interior pages. */
 export const stats = [
-  { value: 2400, suffix: "+", label: "Collection locations", sub: "across the United States" },
+  { value: 2400, suffix: "+", label: "Collection locations", sub: "on scheduled routes" },
   { value: 850, suffix: "+", label: "Commercial partners", sub: "from restaurants to national grocers" },
-  { value: 14, suffix: "", label: "States served", sub: "and growing quickly" },
+  { value: 14, suffix: "", label: "States on route", sub: "plus custom programs nationally" },
   { value: 2013, suffix: "", label: "Serving since", sub: "born from a fifth-generation dairy", raw: true },
 ];
 
@@ -401,69 +434,156 @@ export const processingPartners = [
   },
 ];
 
-export const testimonials = [
+export type Testimonial = {
+  /** The full quote, exactly as the partner gave it. */
+  quote: string;
+  /**
+   * A verbatim, contiguous excerpt of `quote`, short enough to read on a card
+   * as it scrolls past. Never paraphrase this — trim only.
+   */
+  pull: string;
+  name: string;
+  title: string;
+  org: string;
+  /** Short name used on the scrolling cards. */
+  orgShort: string;
+  href: string;
+};
+
+/**
+ * Every quote here is transcribed from the partner profile it links to. Do not
+ * add a testimonial without a source we can point at — see `pendingTestimonials`
+ * below for the ones we have been asked to add and are still waiting on.
+ */
+export const testimonials: Testimonial[] = [
   {
     quote:
       "We changed our composting vendor at the beginning of last year to Agri-Cycle and we are quite happy. The pickup process is more convenient and less work for our staff; we can send Agri-Cycle a wider variety of compostable food and products which means less sorting on site; and it is less expensive than our previous composting process and substantially cheaper than the landfill. Rarely are there solutions for waste streams that are convenient, less work, and less expensive, but we have found one.",
+    pull: "Rarely are there solutions for waste streams that are convenient, less work, and less expensive, but we have found one.",
     name: "Kevin Bright",
     title: "Sustainability Coordinator",
     org: "Colby College, Waterville, ME",
+    orgShort: "Colby College",
     href: "/blog/bonapetit-cafeteria-at-colby-college",
   },
   {
     quote:
       "Working with the Agri-Cycle team is easy and enjoyable. They are always available when needed and respond promptly to any requests. As a nonprofit organization we are always looking for the most cost effective and efficient way to do our work. Thanks to Agri-Cycle, the Food Bank is saving money and staff labor that we previously spent dealing with waste. Every dollar saved is a dollar that can provide 4 meals to a Maine family facing hunger.",
+    pull: "Thanks to Agri-Cycle, the Food Bank is saving money and staff labor that we previously spent dealing with waste. Every dollar saved is a dollar that can provide 4 meals to a Maine family facing hunger.",
     name: "Clara Whitney",
     title: "Director of Public Affairs",
     org: "Good Shepherd Food Bank, Auburn, ME",
+    orgShort: "Good Shepherd Food Bank",
     href: "/blog/good-shepherd-food-bank-auburn-me",
   },
   {
     quote:
       "As part of our Certified Environmental Leader initiatives, Agri-Cycle has been a valuable service for us. They have made composting a user-friendly program by providing the bins and working out a timely pick-up. The cost is offset by the tonnage we are not putting in our dumpster, which would be incinerated otherwise. We know that our food scraps are going to good use.",
+    pull: "The cost is offset by the tonnage we are not putting in our dumpster, which would be incinerated otherwise. We know that our food scraps are going to good use.",
     name: "Chris Merriam",
     title: "Executive Chef, Food and Beverage Manager",
     org: "Marriott Sable Oaks, South Portland, ME",
+    orgShort: "Marriott Sable Oaks",
     href: "/blog/marriott-sable-oaks-south-portland-me",
   },
 ];
 
-export const timeline = [
+/**
+ * Requested for the scrolling testimonial strip, blocked on copy.
+ *
+ * The quotes live in the "Customer Testimonials" slides of the sales deck, which
+ * is not in this repo, so nothing here is written yet — a testimonial attributed
+ * to a named person at a named company has to be their words, not ours. Drop each
+ * one into `testimonials` above (with a `pull` excerpt and a source link) as the
+ * text arrives, and delete its row here.
+ */
+export const pendingTestimonials = [
+  { org: "Hannaford", contacts: ["Samantha Pease", "Ericka Dodge"] },
+  {
+    org: "Amazon",
+    contacts: ["Sally Palmiter", "Patricia Sullivan", "Sam Mehta", "Deidre Kruckenberg"],
+  },
+  { org: "ecomaine", contacts: ["Kevin Roche"] },
+  { org: "Vail Resorts", contacts: ["Mike Johnson"] },
+  { org: "Whole Foods", contacts: ["Karen Franczyk"] },
+  { org: "Market Basket", contacts: ["Bernie Socha"] },
+  { org: "Good Shepherd Food Bank", contacts: ["Sam Michaud"] },
+] as const;
+
+export type TimelineEntry = {
+  year: string;
+  /** Two or three words for the jump-to rail above the timeline. */
+  chapter: string;
+  title: string;
+  body: string;
+  /** The one number or phrase worth remembering from this milestone. */
+  marker?: { value: string; label: string };
+  image: string;
+  /** Icon key, mapped to a lucide component in `Timeline.tsx`. */
+  icon: "sprout" | "milk" | "zap" | "truck" | "droplets" | "handshake";
+  accent: "moss" | "leaf" | "sun" | "sky";
+  contain?: boolean;
+};
+
+export const timeline: TimelineEntry[] = [
   {
     year: "Late 1800s",
+    chapter: "The land",
     title: "The Fogler family works the land",
     body: "The Fogler family has been farming in Exeter, Maine since the late 1800s. Willis J. Peabody, then patriarch, and family at the farm around 1935 — Willis' daughter married a Fogler, and the rest is history.",
+    marker: { value: "5", label: "generations on the same ground" },
     image: "/img/site/history-family.jpg",
+    icon: "sprout",
+    accent: "moss",
   },
   {
     year: "1950s",
+    chapter: "The dairy",
     title: "Stonyvale becomes a commercial dairy",
     body: "The farm started as a commercial operation in the early 1950s with only 17 cows.",
+    marker: { value: "17", label: "cows at the start" },
     image: "/img/site/history-cows.jpg",
+    icon: "milk",
+    accent: "leaf",
   },
   {
     year: "2011",
+    chapter: "The digesters",
     title: "Digesters arrive on the farm",
     body: "Anaerobic digesters were installed at Stonyvale Farm to help with manure management and to diversify revenue through manure conversion to biofuel.",
+    marker: { value: "3", label: "anaerobic digesters" },
     image: "/img/site/digester.jpg",
+    icon: "zap",
+    accent: "sun",
   },
   {
     year: "2013",
+    chapter: "Agri-Cycle",
     title: "Agri-Cycle is established",
     body: "Agri-Cycle was founded to support sister company Exeter Agri-Energy. What began as a way to preserve the viability of a family farm blossomed into a sustainable solution for businesses and organizations seeking a home for wasted food.",
-    image: "/img/site/collectiontruck.jpg",
+    marker: { value: "2013", label: "first collection routes" },
+    image: "/img/site/depackager-loading.jpg",
+    icon: "truck",
+    accent: "sky",
   },
   {
     year: "Today",
+    chapter: "At scale",
     title: "Over 2,000 animals, 6 million gallons",
     body: "The farm now has over 2,000 animals on site — 1,200 milked each day and more than 1,000 young stock — with storage for 6 million gallons of manure.",
+    marker: { value: "6M", label: "gallons of manure storage" },
     image: "/img/site/cows-today.jpeg",
+    icon: "droplets",
+    accent: "leaf",
   },
   {
     year: "2025",
+    chapter: "Closed Loop",
     title: "Closed Loop Partners acquires Agri-Cycle",
     body: "Agri-Cycle was purchased by Closed Loop Partners, a New York-based private equity firm specializing in the circular economy and sustainable materials management. Agri-Cycle continues to work with EAE as a partner alongside a growing network of outlets across the nation.",
     image: "/img/partners/closed-loop.png",
+    icon: "handshake",
+    accent: "sun",
     contain: true,
   },
 ];

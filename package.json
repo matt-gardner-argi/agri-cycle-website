@@ -11,6 +11,12 @@
     "tunnel": "cloudflared tunnel run website-dev",
     "verify": "node scripts/verify.mjs"
   },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 111",
+    "safari >= 16.4"
+  ],
   "dependencies": {
     "clsx": "^2.1.1",
     "lucide-react": "^1.31.0",

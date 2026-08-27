@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Agri Calculator",
   description:
     "Estimate the greenhouse gas emissions you would avoid by sending your food waste to anaerobic digestion instead of a landfill.",
+  alternates: { canonical: "/calculator" },
 };
 
 const notes = [

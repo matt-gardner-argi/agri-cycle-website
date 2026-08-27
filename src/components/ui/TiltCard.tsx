@@ -50,14 +50,18 @@ export function TiltCard({
       onMouseMove={onMove}
       onMouseLeave={onLeave}
       style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d", perspective: 1200 }}
-      className={cn("relative", className)}
+      className={cn("group/tilt relative", className)}
     >
       {children}
       {glare && (
+        // The glare is `pointer-events-none` and its `group` was the card *inside*
+        // this wrapper, not an ancestor — so neither `hover:` nor `group-hover:`
+        // could ever match and the light source never appeared. It now hangs off
+        // a named group on this wrapper, which does contain it.
         <motion.span
           aria-hidden
           style={{ background: glareBg }}
-          className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300 hover:opacity-100 md:group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300 md:group-hover/tilt:opacity-100"
         />
       )}
     </motion.div>

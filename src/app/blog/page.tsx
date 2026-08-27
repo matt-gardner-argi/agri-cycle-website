@@ -11,6 +11,7 @@ import { blogIntro } from "@/content/site";
 export const metadata: Metadata = {
   title: "Blog",
   description: blogIntro,
+  alternates: { canonical: "/blog" },
 };
 
 export default async function BlogPage({
@@ -40,7 +41,7 @@ export default async function BlogPage({
           </Reveal>
           <Reveal delay={0.08}>
             <div className="mt-6">
-              <PostCard post={featured} featured priority />
+              <PostCard post={featured} featured priority headingLevel={2} />
             </div>
           </Reveal>
         </div>
@@ -51,7 +52,7 @@ export default async function BlogPage({
         <div className="container-page">
           <Reveal>
             <div className="border-t border-ink/10 pt-12">
-              <BlogBrowser initialCategory={category ?? "all"} />
+              <BlogBrowser initialCategory={category ?? "all"} headingLevel={2} />
             </div>
           </Reveal>
         </div>

@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: "How Food Waste Collection Works",
   description:
     "What you do, what we do, and who we work with. Put your food waste in our designated container and we'll take it from there.",
+  alternates: { canonical: "/services/collection" },
 };
 
 const accepted = [

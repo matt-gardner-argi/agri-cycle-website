@@ -5,6 +5,7 @@ import { termsOfUse } from "@/content/legal";
 export const metadata: Metadata = {
   title: termsOfUse.title,
   description: "Terms and conditions of use for the Agri-Cycle website.",
+  alternates: { canonical: "/terms-of-use" },
 };
 
 export default function TermsOfUsePage() {

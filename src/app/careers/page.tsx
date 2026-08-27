@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Employment",
   description:
     "Welcome to Agri-Cycle. Take a look at the exciting opportunities we have across drivers, operations and support roles.",
+  alternates: { canonical: "/careers" },
 };
 
 const JOBS_URL =

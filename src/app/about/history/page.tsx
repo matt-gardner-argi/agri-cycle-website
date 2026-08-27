@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "History",
   description:
     "From a fifth-generation dairy farm in Exeter, Maine to a national organics collection platform — the Agri-Cycle story.",
+  alternates: { canonical: "/about/history" },
 };
 
 export default function HistoryPage() {
@@ -97,7 +98,7 @@ export default function HistoryPage() {
       <CTASection
         title="Food Full Circle — and we mean it"
         body="Agri-Cycle continues to work with Exeter Agri-Energy as a partner alongside a growing network of outlets across the nation."
-        image="/img/site/cows-narrow.jpg"
+        image="/img/hero/aerial.jpg"
       />
     </>
   );

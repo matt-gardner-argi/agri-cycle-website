@@ -64,7 +64,7 @@ export function HowItWorks() {
                     alt={step.title}
                     fill
                     sizes="(max-width: 1024px) 100vw, 45vw"
-                    priority={i === 0}
+                    loading={i === 0 ? "eager" : "lazy"}
                     className="object-cover transition-transform duration-[1200ms] ease-out hover:scale-105"
                   />
                   <span

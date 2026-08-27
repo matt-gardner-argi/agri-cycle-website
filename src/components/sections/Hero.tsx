@@ -5,9 +5,9 @@ import Link from "next/link";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 import { ArrowDown, Recycle } from "lucide-react";
-import { site } from "@/content/site";
+import { serviceArea, site } from "@/content/site";
 import { Button } from "@/components/ui/Button";
-import { WordReveal } from "@/components/ui/Reveal";
+import { useServerRendered, WordReveal } from "@/components/ui/Reveal";
 
 /** Decorative organic shapes that drift behind the headline. */
 const blobs = [
@@ -19,6 +19,9 @@ const blobs = [
 export function Hero() {
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
+  // The hero is the whole above-the-fold page. Its entrances are client-only,
+  // so the server renders the finished state rather than an empty column.
+  const fromServer = useServerRendered();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
 
   const bgY = useTransform(scrollYProgress, [0, 1], reduce ? ["0%", "0%"] : ["0%", "22%"]);
@@ -37,7 +40,8 @@ export function Hero() {
           src="/img/hero/apple-core.webp"
           alt=""
           fill
-          priority
+          loading="eager"
+          fetchPriority="high"
           sizes="100vw"
           className="object-cover object-center"
         />
@@ -75,10 +79,16 @@ export function Hero() {
         />
       ))}
 
-      {/* Fine grid to add engineered texture */}
+      {/* Texture. A ruled grid read as a tech product rather than a farm, so the
+          engineered layer is gone: what is left is photographic grain and two
+          soft contour bands, closer to a field than a dashboard. */}
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 opacity-[0.07] [background-image:linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] [background-size:5.5rem_5.5rem] [mask-image:radial-gradient(70%_60%_at_50%_40%,black,transparent)]"
+        className="grain-layer pointer-events-none absolute inset-0 -z-10 opacity-[0.16] mix-blend-soft-light"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.09] [background-image:radial-gradient(60rem_28rem_at_18%_88%,transparent_39%,var(--color-leaf)_39.6%,transparent_41%),radial-gradient(52rem_24rem_at_82%_12%,transparent_45%,var(--color-sun)_45.5%,transparent_47%)] [mask-image:radial-gradient(80%_70%_at_50%_45%,black,transparent)]"
       />
 
       <motion.div
@@ -87,7 +97,7 @@ export function Hero() {
       >
         <div className="max-w-2xl">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={fromServer || reduce ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-white/18 bg-white/8 py-2 pr-4 pl-2 text-[0.75rem] font-medium text-white/80 backdrop-blur-md"
@@ -105,7 +115,7 @@ export function Hero() {
           </h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 18 }}
+            initial={fromServer || reduce ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.62, ease: [0.16, 1, 0.3, 1] }}
             className="mt-7 max-w-xl text-[1.0625rem] leading-relaxed text-white/72 sm:text-lg"
@@ -117,7 +127,7 @@ export function Hero() {
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
+            initial={fromServer || reduce ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.76, ease: [0.16, 1, 0.3, 1] }}
             className="mt-9 flex flex-wrap items-center gap-3.5"
@@ -131,7 +141,7 @@ export function Hero() {
           </motion.div>
 
           <motion.p
-            initial={{ opacity: 0 }}
+            initial={fromServer || reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1 }}
             className="mt-9 text-[0.8125rem] text-white/45"
@@ -143,33 +153,37 @@ export function Hero() {
 
         {/* Floating stat cards — hidden on small screens to keep the hero tight */}
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
+          initial={fromServer || reduce ? false : { opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
           className="relative hidden lg:block"
         >
           <div className="relative aspect-4/5 w-full max-w-md justify-self-end overflow-hidden rounded-[2rem] border border-white/15 shadow-[0_40px_90px_-40px_rgba(0,0,0,0.8)]">
             <Image
-              src="/img/site/truck-69.jpg"
-              alt="An Agri-Cycle collection truck on route"
+              src="/img/site/depackager-loading.jpg"
+              alt="An Agri-Cycle operator tipping collected food scraps into the depackager"
               fill
               sizes="(min-width: 1024px) 28rem, 100vw"
-              priority
-              className="object-cover"
+              loading="eager"
+              fetchPriority="high"
+              className="object-[58%_50%] object-cover"
             />
             <div className="absolute inset-0 bg-linear-0 from-ink/85 via-transparent to-transparent" />
             <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/15 bg-ink/55 p-5 backdrop-blur-lg">
               <p className="font-display text-4xl font-bold tracking-tight text-white">2,400+</p>
               <p className="mt-1 text-[0.8125rem] text-white/65">
-                collection locations across 14 states
+                collection locations on scheduled routes in {serviceArea.routed}
               </p>
             </div>
           </div>
 
+          {/* Anchored to the opposite corner from the 2,400+ panel. Both used to
+              hang off the bottom edge, where the float animation drove this card
+              straight through the other one at every width above 1024px. */}
           <motion.div
-            animate={reduce ? {} : { y: [0, -14, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -bottom-8 -left-6 w-56 rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-xl"
+            animate={reduce ? {} : { y: [0, -8, 0] }}
+            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-7 -left-7 w-56 rounded-2xl border border-white/15 bg-ink/45 p-5 backdrop-blur-xl"
           >
             <p className="font-display text-3xl font-bold text-leaf-bright">70,000</p>
             <p className="mt-1 text-[0.75rem] leading-snug text-white/70">
@@ -181,7 +195,7 @@ export function Hero() {
 
       {/* Scroll hint */}
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={fromServer || reduce ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.3, duration: 0.8 }}
         className="absolute inset-x-0 bottom-6 flex justify-center"

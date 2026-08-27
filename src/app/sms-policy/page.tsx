@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: smsPolicy.title,
   description:
     "How Agri-Cycle Energy, LLC collects, uses and protects your information, including information related to SMS communications.",
+  alternates: { canonical: "/sms-policy" },
 };
 
 export default function SmsPolicyPage() {

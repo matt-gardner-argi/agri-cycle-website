@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Car, Flame, Home, Info, Leaf, RotateCcw, TreePine, Zap } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Counter } from "@/components/ui/Counter";
@@ -10,8 +10,12 @@ import { Eyebrow } from "@/components/ui/SectionHeading";
 import { cn } from "@/lib/utils";
 
 /* ---------------------------------------------------------------------------
-   Emission factors. Sources are surfaced to the reader in the assumptions
-   panel so the numbers can be checked rather than taken on faith.
+   Emission factors, and the published source behind each one.
+
+   Everything here is surfaced to the reader in the methodology panel: the
+   formula, every constant, its unit and a link to the reference it came from.
+   A number a salesperson cannot trace is a number they cannot defend, so no
+   factor goes in this file without a citation next to it.
 --------------------------------------------------------------------------- */
 const FACTORS = {
   /** Net MTCO2e avoided per short ton of food waste digested instead of landfilled (EPA WARM). */
@@ -33,6 +37,89 @@ const FACTORS = {
   /** Average US household annual electricity consumption, kWh (EIA). */
   kwhPerHomeYear: 10500,
 };
+
+/** Published references behind the constants above. */
+const SOURCES = {
+  warm: {
+    label: "EPA Waste Reduction Model (WARM)",
+    href: "https://www.epa.gov/warm",
+  },
+  equivalencies: {
+    label: "EPA Greenhouse Gas Equivalencies — calculations and references",
+    href: "https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references",
+  },
+  emissionFactors: {
+    label: "EPA GHG Emission Factors Hub",
+    href: "https://www.epa.gov/climateleadership/ghg-emission-factors-hub",
+  },
+  eia: {
+    label: "EIA — average annual electricity use per US home",
+    href: "https://www.eia.gov/tools/faqs/faq.php?id=97&t=3",
+  },
+  operational: {
+    label: "Agri-Cycle operating data, Exeter Agri-Energy",
+    href: "/about/anaerobic-digestion",
+  },
+} as const;
+
+type FactorRow = {
+  name: string;
+  value: string;
+  note: string;
+  source: (typeof SOURCES)[keyof typeof SOURCES];
+};
+
+/** One row per constant, rendered as the methodology table. */
+const FACTOR_TABLE: FactorRow[] = [
+  {
+    name: "Diversion benefit",
+    value: `${FACTORS.perTonDiverted} MTCO₂e / short ton`,
+    note: "Net avoided emissions from anaerobically digesting food waste instead of landfilling it.",
+    source: SOURCES.warm,
+  },
+  {
+    name: "Collection fuel economy",
+    value: `${FACTORS.truckMpg} mpg`,
+    note: "Diesel collection vehicle, used to estimate the fuel saved on the landfill trip you no longer make.",
+    source: SOURCES.operational,
+  },
+  {
+    name: "Diesel emissions",
+    value: `${FACTORS.kgPerGalDiesel} kg CO₂e / gallon`,
+    note: "Combustion of one gallon of diesel.",
+    source: SOURCES.emissionFactors,
+  },
+  {
+    name: "Electricity yield",
+    value: `${FACTORS.kwhPerTon} kWh / short ton`,
+    note: "Electricity generated per ton of food waste through anaerobic digestion at our processing partners.",
+    source: SOURCES.operational,
+  },
+  {
+    name: "Car-year equivalent",
+    value: `${FACTORS.carYear} MTCO₂e / vehicle-year`,
+    note: "Emissions from one average passenger vehicle driven for a year.",
+    source: SOURCES.equivalencies,
+  },
+  {
+    name: "Tree seedling equivalent",
+    value: `${FACTORS.treeTenYears} MTCO₂e / seedling`,
+    note: "Carbon sequestered by one tree seedling grown for ten years.",
+    source: SOURCES.equivalencies,
+  },
+  {
+    name: "Gasoline equivalent",
+    value: `${FACTORS.kgPerGalGasoline} kg CO₂e / gallon`,
+    note: "Combustion of one gallon of gasoline.",
+    source: SOURCES.equivalencies,
+  },
+  {
+    name: "Household electricity",
+    value: `${FACTORS.kwhPerHomeYear.toLocaleString()} kWh / home-year`,
+    note: "Average annual electricity consumption of a US home.",
+    source: SOURCES.eia,
+  },
+];
 
 type Mode = "regular" | "event";
 type Unit = "tons" | "pounds";
@@ -212,13 +299,7 @@ export function ImpactCalculator({ tone = "leaf" }: { tone?: "leaf" | "dark" }) 
               <div className="mt-7 space-y-7">
                 <AnimatePresence initial={false}>
                   {mode === "event" && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
-                    >
+                    <Collapsible>
                       <Slider
                         label="Duration of event"
                         unit={days === 1 ? "day" : "days"}
@@ -229,7 +310,7 @@ export function ImpactCalculator({ tone = "leaf" }: { tone?: "leaf" | "dark" }) 
                         onChange={setDays}
                         dark={dark}
                       />
-                    </motion.div>
+                    </Collapsible>
                   )}
                 </AnimatePresence>
 
@@ -396,7 +477,7 @@ export function ImpactCalculator({ tone = "leaf" }: { tone?: "leaf" | "dark" }) 
                 )}
               >
                 <Info aria-hidden className="size-3.5" />
-                {showAssumptions ? "Hide" : "Show"} the assumptions behind these numbers
+                {showAssumptions ? "Hide" : "Show"} the model, the factors and the sources
               </button>
 
               <AnimatePresence initial={false}>
@@ -414,28 +495,97 @@ export function ImpactCalculator({ tone = "leaf" }: { tone?: "leaf" | "dark" }) 
                         dark ? "border-white/12 bg-white/5 text-white/60" : "border-ink/10 bg-white/70 text-ink/60"
                       )}
                     >
-                      <p>
-                        This is an estimate, not a guarantee. Diversion avoids{" "}
-                        <strong>{FACTORS.perTonDiverted} MTCO₂e per short ton</strong> (EPA WARM
-                        comparison of landfilling vs. anaerobic digestion of food waste), and avoided
-                        landfill hauling saves fuel at{" "}
-                        <strong>{FACTORS.truckMpg} mpg</strong> and{" "}
-                        <strong>{FACTORS.kgPerGalDiesel} kg CO₂e per gallon</strong> of diesel.
-                        Generation is modelled at <strong>{FACTORS.kwhPerTon} kWh per ton</strong>.
+                      <p className="font-semibold">The model</p>
+                      <p className="mt-2">
+                        Avoided emissions are the sum of two terms. <strong>Diversion:</strong> tons
+                        collected × {FACTORS.perTonDiverted} MTCO₂e per ton — the difference between
+                        landfilling that material and digesting it. <strong>Transport:</strong>{" "}
+                        (round-trip landfill miles × pickups ÷ {FACTORS.truckMpg} mpg) ×{" "}
+                        {FACTORS.kgPerGalDiesel} kg CO₂e per gallon — the landfill trip you no longer
+                        make. Electricity is tons × {FACTORS.kwhPerTon} kWh. Everything below the
+                        headline figure is that total expressed in EPA equivalencies.
                       </p>
-                      <p className="mt-3">
-                        Equivalencies use EPA&apos;s Greenhouse Gas Equivalencies factors:{" "}
-                        {FACTORS.carYear} MTCO₂e per car-year, {FACTORS.treeTenYears} MTCO₂e per tree
-                        seedling grown ten years, {FACTORS.kgPerGalGasoline} kg CO₂e per gallon of
-                        gasoline, and {FACTORS.kwhPerHomeYear.toLocaleString()} kWh of annual household
-                        electricity use. Your actual results depend on your waste composition, route
-                        distances and the processing facility used.
+
+                      <p className="mt-4">
+                        For your current inputs:{" "}
+                        <strong>{results.fromDiversion.toFixed(1)} MTCO₂e</strong> from diversion and{" "}
+                        <strong>{results.fromTransport.toFixed(2)} MTCO₂e</strong> from avoided
+                        hauling, over {results.pickups.toLocaleString()}{" "}
+                        {mode === "regular" ? "pickups a year" : "days"}.
                       </p>
-                      <p className="mt-3">
-                        Contribution split for the current inputs:{" "}
-                        <strong>{results.fromDiversion.toFixed(1)} MTCO₂e</strong> from diversion,{" "}
-                        <strong>{results.fromTransport.toFixed(2)} MTCO₂e</strong> from avoided landfill
-                        hauling.
+
+                      <p className="mt-5 font-semibold">Every factor, and where it comes from</p>
+                      <div className="mt-2 overflow-x-auto">
+                        <table className="w-full min-w-[34rem] border-collapse text-left">
+                          <thead>
+                            <tr
+                              className={cn(
+                                "border-b",
+                                dark ? "border-white/15" : "border-ink/12"
+                              )}
+                            >
+                              <th scope="col" className="py-2 pr-4 font-semibold">
+                                Factor
+                              </th>
+                              <th scope="col" className="py-2 pr-4 font-semibold">
+                                Value
+                              </th>
+                              <th scope="col" className="py-2 font-semibold">
+                                Source
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {FACTOR_TABLE.map((f) => (
+                              <tr
+                                key={f.name}
+                                className={cn(
+                                  "border-b last:border-0",
+                                  dark ? "border-white/8" : "border-ink/8"
+                                )}
+                              >
+                                <th
+                                  scope="row"
+                                  className={cn(
+                                    "py-2.5 pr-4 align-top font-medium",
+                                    dark ? "text-white/85" : "text-ink/80"
+                                  )}
+                                >
+                                  {f.name}
+                                  <span className="mt-0.5 block font-normal opacity-70">
+                                    {f.note}
+                                  </span>
+                                </th>
+                                <td className="py-2.5 pr-4 align-top whitespace-nowrap tabular-nums">
+                                  {f.value}
+                                </td>
+                                <td className="py-2.5 align-top">
+                                  <a
+                                    href={f.source.href}
+                                    target={f.source.href.startsWith("http") ? "_blank" : undefined}
+                                    rel={
+                                      f.source.href.startsWith("http")
+                                        ? "noopener noreferrer"
+                                        : undefined
+                                    }
+                                    className={cn(
+                                      "underline decoration-1 underline-offset-2 transition-colors",
+                                      dark ? "hover:text-leaf-bright" : "hover:text-leaf-deep"
+                                    )}
+                                  >
+                                    {f.source.label}
+                                  </a>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <p className="mt-4">
+                        This is an estimate, not a guarantee. Your actual results depend on waste
+                        composition, route distances and which processing facility handles your
+                        material — we will model your specific sites as part of a quote.
                       </p>
                     </div>
                   </motion.div>
@@ -447,6 +597,41 @@ export function ImpactCalculator({ tone = "leaf" }: { tone?: "leaf" | "dark" }) 
       </div>
     </section>
   );
+}
+
+/**
+ * Height-animated wrapper for the event-duration slider. It clips only while
+ * the height is moving: the slider's 44px touch target overhangs this box, so
+ * a permanent clip would cut the bottom off the target — and `overflow-hidden`
+ * would go further and let focusing the slider scroll the label out of sight.
+ */
+function Collapsible({ children }: { children: ReactNode }) {
+  const [clipping, setClipping] = useState(true);
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      onAnimationStart={() => setClipping(true)}
+      onAnimationComplete={() => setClipping(false)}
+      className={cn(clipping && "overflow-clip")}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/**
+ * `label` doubles as the fallback id, and label text is not a valid id: raw,
+ * it produces `id="Round-trip to your landfill"`, which needs CSS.escape to
+ * select and cannot be linked to as a fragment.
+ */
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function Slider({
@@ -473,12 +658,16 @@ function Slider({
   compact?: boolean;
 }) {
   const pct = ((value - min) / (max - min)) * 100;
+  const inputId = id ?? slugify(label);
   return (
     <div>
+      {/* A real <label> always names the input — this one, or the caller's own
+          when `compact`. No aria-label: it silently outranks the label element,
+          which is how the amount slider ended up announcing as just "tons". */}
       {!compact && (
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <label
-            htmlFor={id ?? label}
+            htmlFor={inputId}
             className={cn("text-[0.8125rem] font-semibold", dark ? "text-white/80" : "text-ink/75")}
           >
             {label}
@@ -486,28 +675,36 @@ function Slider({
         </div>
       )}
       <div className="flex items-center gap-4">
-        <input
-          id={id ?? label}
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          aria-label={label || unit}
-          className={cn(
-            "h-1.5 flex-1 cursor-pointer appearance-none rounded-full focus-ring",
-            "[&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-ink [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:transition-transform hover:[&::-webkit-slider-thumb]:scale-115",
-            "[&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-ink [&::-moz-range-thumb]:bg-white"
-          )}
+        {/* The track paints at 6px, which is far under a thumb-sized touch
+            target, so the input is a transparent 44px-tall overlay and the
+            visible track is this wrapper behind it. The focus ring rides the
+            wrapper for the same reason: it should hug the bar, not the box. */}
+        <div
+          className="relative h-1.5 flex-1 rounded-full has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-3 has-[:focus-visible]:outline-leaf"
           style={{
             background: `linear-gradient(to right, var(--color-ink) ${pct}%, ${
               dark ? "rgba(255,255,255,0.15)" : "rgba(7,23,17,0.14)"
             } ${pct}%)`,
           }}
-        />
+        >
+          <input
+            id={inputId}
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className={cn(
+              "absolute inset-x-0 top-1/2 h-11 -translate-y-1/2 cursor-pointer appearance-none bg-transparent focus-visible:outline-none",
+              "[&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-ink [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:transition-transform hover:[&::-webkit-slider-thumb]:scale-115",
+              "[&::-moz-range-track]:h-11 [&::-moz-range-track]:bg-transparent",
+              "[&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-ink [&::-moz-range-thumb]:bg-white"
+            )}
+          />
+        </div>
         <output
-          htmlFor={id ?? label}
+          htmlFor={inputId}
           className={cn(
             "min-w-[6.5rem] shrink-0 text-right font-display text-[1.0625rem] font-bold tabular-nums tracking-tight",
             dark ? "text-white" : "text-ink"

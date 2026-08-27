@@ -5,6 +5,7 @@ import { privacyPolicy } from "@/content/legal";
 export const metadata: Metadata = {
   title: privacyPolicy.title,
   description: "How Agri-Cycle collects and uses information gathered from visitors to this website.",
+  alternates: { canonical: "/privacy-policy" },
 };
 
 export default function PrivacyPolicyPage() {

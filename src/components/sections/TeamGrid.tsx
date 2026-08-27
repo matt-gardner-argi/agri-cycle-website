@@ -30,7 +30,7 @@ export function TeamGrid() {
                   alt={person.name}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  priority={i < 4}
+                  loading={i < 4 ? "eager" : "lazy"}
                   className="object-cover object-top transition-all duration-[900ms] ease-out group-hover:scale-107 group-hover:brightness-110"
                 />
                 <div

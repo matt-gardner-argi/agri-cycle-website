@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: "Processing Partners",
   description:
     "Agri-Cycle works with a growing network of processing partners who turn your waste into energy — starting with sister company Exeter Agri-Energy.",
+  alternates: { canonical: "/about/processing-partners" },
 };
 
 const featured = processingPartners[0];
@@ -80,7 +81,8 @@ export default function ProcessingPartnersPage() {
                   src={featured.image!}
                   alt="Aerial view of the Exeter Agri-Energy facility"
                   fill
-                  priority
+                  loading="eager"
+                  fetchPriority="high"
                   sizes="(max-width: 1024px) 100vw, 45vw"
                   className="object-cover"
                 />

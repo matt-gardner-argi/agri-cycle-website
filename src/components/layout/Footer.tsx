@@ -11,6 +11,14 @@ const legalLinks = [
   { label: "SMS Privacy Policy & TOS", href: "/sms-policy" },
 ];
 
+/* Every link down here is text-only, so its box collapsed to the line box —
+   15px to 22px tall, well under the 44px target minimum and easy to miss on a
+   phone. The fix throughout is symmetric vertical padding to grow the anchor's
+   border box — the hit area — to 44px, cancelled by an equal negative margin so
+   its margin box, and with it every position in the painted layout, is exactly
+   what it was. The legal row also needs `inline-block`: a bare inline box with
+   vertical padding repaints its glyphs with different antialiasing. */
+
 export function Footer() {
   const year = new Date().getFullYear();
 
@@ -19,7 +27,7 @@ export function Footer() {
       {/* Oversized brand marquee across the top of the footer. */}
       <div className="border-b border-white/8 py-7">
         <Marquee slow>
-          {["Food Full Circle", "You've got the power", "Maine to California"].map((phrase) => (
+          {["Food Full Circle", "You've got the power", "14 states on route"].map((phrase) => (
             <span
               key={phrase}
               className="flex items-center gap-8 pr-8 font-display text-[clamp(1.6rem,1rem+3vw,3.2rem)] font-bold tracking-[-0.04em] whitespace-nowrap text-white/12"
@@ -44,7 +52,7 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr]">
           <Reveal direction="up">
             <div className="flex flex-col gap-5">
-              <Link href="/" className="flex items-center gap-3 focus-ring">
+              <Link href="/" className="-my-[1.2px] flex items-center gap-3 py-[1.2px] focus-ring">
                 <Image
                   src="/img/site/logo-mark.png"
                   alt=""
@@ -60,19 +68,24 @@ export function Footer() {
                 </span>
               </Link>
               <p className="max-w-sm text-[0.9375rem] leading-relaxed text-white/60">
-                We are located in South Portland, Maine with collection routes throughout New England,
-                the Mid-Atlantic and beyond — serving food waste producers from Maine to California.
+                We are located in South Portland, Maine, running scheduled collection routes across New
+                England, the Mid-Atlantic and beyond — plus customized programs for producers
+                anywhere in the country.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 {site.social.map((s) => (
+                  /* The pill's border is the painted edge, so the target grows on the
+                     anchor and the pill keeps its own box down to the pixel. */
                   <a
                     key={s.label}
                     href={s.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-full border border-white/15 px-4 py-2 text-[0.8rem] font-medium text-white/70 transition-all duration-300 hover:border-leaf hover:bg-leaf/15 hover:text-white focus-ring"
+                    className="group -my-[3.4px] flex items-center py-[3.4px] focus-ring"
                   >
-                    {s.label}
+                    <span className="rounded-full border border-white/15 px-4 py-2 text-[0.8rem] font-medium text-white/70 transition-all duration-300 group-hover:border-leaf group-hover:bg-leaf/15 group-hover:text-white">
+                      {s.label}
+                    </span>
                   </a>
                 ))}
               </div>
@@ -124,7 +137,7 @@ export function Footer() {
                 <li>
                   <a
                     href={site.phoneHref}
-                    className="group flex items-start gap-3 text-white/70 transition-colors hover:text-white focus-ring"
+                    className="group -my-2 flex items-start gap-3 py-2 text-white/70 transition-colors hover:text-white focus-ring"
                   >
                     <Phone aria-hidden className="mt-1 size-4 shrink-0 text-leaf" />
                     <span className="font-display text-xl font-bold tracking-tight text-white transition-colors group-hover:text-leaf-bright">
@@ -135,7 +148,7 @@ export function Footer() {
                 <li>
                   <Link
                     href="/contact"
-                    className="flex items-start gap-3 text-white/70 transition-colors hover:text-white focus-ring"
+                    className="-my-[10.75px] flex items-start gap-3 py-[10.75px] text-white/70 transition-colors hover:text-white focus-ring"
                   >
                     <Mail aria-hidden className="mt-0.5 size-4 shrink-0 text-leaf" />
                     Email us
@@ -169,7 +182,12 @@ export function Footer() {
           <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {legalLinks.map((l) => (
               <li key={l.href}>
-                <Link href={l.href} className="transition-colors hover:text-leaf-bright focus-ring">
+                {/* Padding trimmed to just clear 44px: this row wraps on a phone and a
+                    taller box would reach over the glyphs of the line above it. */}
+                <Link
+                  href={l.href}
+                  className="-my-[12.5px] inline-block py-[12.5px] transition-colors hover:text-leaf-bright focus-ring"
+                >
                   {l.label}
                 </Link>
               </li>
@@ -185,7 +203,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   return (
     <Link
       href={href}
-      className="group inline-flex items-center gap-2 text-[0.9rem] text-white/60 transition-colors hover:text-white focus-ring"
+      className="group -my-[11.2px] inline-flex min-w-11 items-center gap-2 py-[11.2px] text-[0.9rem] text-white/60 transition-colors hover:text-white focus-ring"
     >
       <span className="h-px w-0 bg-leaf transition-all duration-300 group-hover:w-3" />
       {children}

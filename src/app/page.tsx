@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
@@ -18,6 +19,12 @@ import { Reveal, RevealGroup, RevealItem } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
 import { wasteFacts } from "@/content/site";
 import { posts } from "@/content/posts";
+
+// Declared explicitly rather than left to inherit the layout's fallback, so
+// that fallback stays free to change without silently moving the home canonical.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function HomePage() {
   const latest = posts.slice(0, 3);

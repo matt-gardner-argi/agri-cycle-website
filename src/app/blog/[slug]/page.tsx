@@ -26,6 +26,7 @@ export async function generateMetadata({
   return {
     title: post.title,
     description: post.excerpt,
+    alternates: { canonical: `/blog/${slug}` },
     openGraph: {
       title: post.title,
       description: post.excerpt,
@@ -54,7 +55,8 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
             src={post.image}
             alt=""
             fill
-            priority
+            loading="eager"
+            fetchPriority="high"
             sizes="100vw"
             className="-z-30 scale-105 object-cover"
           />

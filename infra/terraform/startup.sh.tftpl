@@ -14,7 +14,9 @@ readonly RELEASE_DIR="$APP_ROOT/releases/$APP_BRANCH"
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
-apt-get install -y ca-certificates certbot curl git nginx python3-certbot-nginx
+apt-get install -y ca-certificates certbot curl git nginx libnginx-mod-http-brotli-filter \
+  libnginx-mod-http-brotli-static python3-certbot-nginx || \
+  apt-get install -y ca-certificates certbot curl git nginx python3-certbot-nginx
 
 if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'Number(process.versions.node.split(".")[0])')" -lt 20 ]; then
   curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
@@ -79,6 +81,53 @@ server {
 }
 NGINX
 
+# Compress the text payloads Next serves. HTML, JS, CSS and JSON are the bulk of
+# a page load and none of them are compressed by default on Ubuntu's nginx.
+cat >/etc/nginx/conf.d/agri-cycle-compression.conf <<'NGINX'
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 6;
+gzip_min_length 1024;
+gzip_types
+    application/javascript
+    application/json
+    application/manifest+json
+    application/rss+xml
+    application/xml
+    image/svg+xml
+    text/css
+    text/javascript
+    text/plain
+    text/xml;
+NGINX
+
+# Brotli beats gzip by roughly 15-20% on JS and CSS. The module is optional on
+# Ubuntu, so only write the config when nginx actually has it loaded — an
+# unknown directive is a hard config error and would take the whole site down.
+if nginx -V 2>&1 | grep -q brotli || [ -f /usr/share/nginx/modules-available/mod-http-brotli-filter.conf ]; then
+  cat >/etc/nginx/conf.d/agri-cycle-brotli.conf <<'NGINX'
+brotli on;
+brotli_comp_level 5;
+brotli_min_length 1024;
+brotli_types
+    application/javascript
+    application/json
+    application/manifest+json
+    application/rss+xml
+    application/xml
+    image/svg+xml
+    text/css
+    text/javascript
+    text/plain
+    text/xml;
+NGINX
+  if ! nginx -t; then
+    echo "brotli config rejected by nginx; removing it and continuing with gzip only" >&2
+    rm -f /etc/nginx/conf.d/agri-cycle-brotli.conf
+  fi
+fi
+
 if [ -e /etc/nginx/sites-enabled/default ]; then
   mv /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default.disabled
 fi
@@ -119,8 +168,41 @@ if [ "$tls_ready" != true ]; then
   exit 1
 fi
 
+# Certbot writes a plain `listen 443 ssl;` block, which leaves the site on
+# HTTP/1.1 — every request to this origin then pays a fresh round trip instead
+# of multiplexing over one connection, and it shows up as slow on mobile.
+# nginx moved the directive in 1.25.1: older builds take it as a `listen`
+# parameter, newer ones want the standalone `http2 on;` and warn about the old
+# form. Pick the right one for whatever version the image shipped with.
+nginx_version="$(nginx -v 2>&1 | sed -n 's#.*nginx/\([0-9.]*\).*#\1#p')"
+nginx_major="$${nginx_version%%.*}"
+nginx_minor="$(echo "$nginx_version" | cut -d. -f2)"
+
+if [ "$nginx_major" -gt 1 ] || { [ "$nginx_major" -eq 1 ] && [ "$nginx_minor" -ge 25 ]; }; then
+  if ! grep -q '^\s*http2 on;' /etc/nginx/sites-available/agri-cycle-website; then
+    sed -i '0,/listen 443 ssl/s//http2 on;\n    listen 443 ssl/' \
+      /etc/nginx/sites-available/agri-cycle-website
+  fi
+else
+  sed -i -E 's/listen (\[::\]:)?443 ssl;/listen \1443 ssl http2;/' \
+    /etc/nginx/sites-available/agri-cycle-website
+fi
+
+if ! nginx -t; then
+  echo "HTTP/2 nginx edit did not validate; leaving the certbot config as-is" >&2
+  sed -i -E 's/listen (\[::\]:)?443 ssl http2;/listen \1443 ssl;/' \
+    /etc/nginx/sites-available/agri-cycle-website
+  sed -i '/^\s*http2 on;$/d' /etc/nginx/sites-available/agri-cycle-website
+fi
+
 nginx -t
 systemctl reload nginx
+
+# Fail loudly if the origin is still HTTP/1.1 — this is the thing being fixed.
+if command -v curl >/dev/null 2>&1; then
+  negotiated="$(curl -sS -o /dev/null -w '%{http_version}' "https://$PUBLIC_HOSTNAME/" || echo "unknown")"
+  echo "Negotiated HTTP version for https://$PUBLIC_HOSTNAME/: $negotiated"
+fi
 
 for attempt in $(seq 1 30); do
   if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then

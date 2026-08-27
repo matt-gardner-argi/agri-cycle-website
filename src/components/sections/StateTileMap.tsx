@@ -3,9 +3,9 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { ExternalLink, Info, Search } from "lucide-react";
-import { banLevels, banTypes, stateTiles, type BanLevel } from "@/content/site";
+import { banLevels, banTypes, serviceArea, stateTiles, type BanLevel } from "@/content/site";
 import { Button } from "@/components/ui/Button";
-import { Reveal } from "@/components/ui/Reveal";
+import { Reveal, useServerRendered } from "@/components/ui/Reveal";
 import { Eyebrow } from "@/components/ui/SectionHeading";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,9 @@ const ROWS = 8;
 const COLS = 11;
 
 export function StateTileMap({ heading = true }: { heading?: boolean }) {
+  // Tiles animate in per-tile; without this the 51 state names are absent from
+  // the server HTML, which is the only copy a crawler gets for this section.
+  const fromServer = useServerRendered();
   const [selected, setSelected] = useState<string | null>("VT");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<BanLevel | "all">("all");
@@ -90,13 +93,14 @@ export function StateTileMap({ heading = true }: { heading?: boolean }) {
               </Reveal>
               <Reveal delay={0.06}>
                 <h2 className="mt-5 text-[clamp(2rem,1.2rem+2.8vw,3.4rem)] leading-[1.05]">
-                  Maine to <span className="font-serif italic">California</span>
+                  14 states on route.{" "}
+                  <span className="font-serif italic">The rest, by design.</span>
                 </h2>
               </Reveal>
               <Reveal delay={0.12}>
                 <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed text-ink/70">
-                  Agri-Cycle provides services to all food waste producers throughout the United
-                  States. Curious about how we can help you achieve your food waste recycling goals?
+                  {serviceArea.long} Curious about how we can help you achieve your food waste
+                  recycling goals?
                 </p>
               </Reveal>
             </div>
@@ -179,19 +183,29 @@ export function StateTileMap({ heading = true }: { heading?: boolean }) {
           </div>
         </Reveal>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-12">
+        {/*
+          `grid-cols-[minmax(0,1fr)]` matters here. A grid column defaults to
+          `auto`, which is at least the min-content width of its contents — the
+          tile map is 30rem wide, so the column grew to 30rem on a phone, the
+          `overflow-x-auto` wrapper inside it never became narrower than its own
+          content, and so it never became a scroll container. The overflow
+          escaped up to `container-page`, whose `overflow-x: clip` cut it off:
+          ME, NH, RI and CT were rendered past the right edge with no way to
+          scroll to them and no hit target left to tap.
+        */}
+        <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-12">
           {/* Tile grid */}
-          <Reveal delay={0.24}>
+          <Reveal delay={0.24} className="min-w-0">
             <div
-              className="w-full overflow-x-auto pb-2"
+              className="w-full touch-pan-x overflow-x-auto pb-3 [scrollbar-width:thin]"
               role="group"
               aria-label="United States organics policy tile map"
             >
-              <div className="grid min-w-[30rem] gap-1.5 sm:gap-2">
+              <div className="grid min-w-[21rem] gap-1 sm:min-w-[30rem] sm:gap-2">
                 {grid.map((row, ri) => (
                   <div
                     key={ri}
-                    className="grid gap-1.5 sm:gap-2"
+                    className="grid gap-1 sm:gap-2"
                     style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}
                   >
                     {Array.from({ length: COLS }, (_, ci) => {
@@ -209,7 +223,7 @@ export function StateTileMap({ heading = true }: { heading?: boolean }) {
                           onFocus={() => setSelected(tile.code)}
                           aria-label={`${tile.name}: ${banLevels[tile.level].label}`}
                           aria-pressed={isSel}
-                          initial={{ opacity: 0, scale: 0.6 }}
+                          initial={fromServer ? false : { opacity: 0, scale: 0.6 }}
                           whileInView={{ opacity: 1, scale: 1 }}
                           viewport={{ once: true }}
                           transition={{
@@ -234,6 +248,10 @@ export function StateTileMap({ heading = true }: { heading?: boolean }) {
                 ))}
               </div>
             </div>
+            <p className="mt-2 text-[0.75rem] text-ink/45 sm:hidden">
+              The map scrolls sideways on narrow screens — swipe to reach the
+              north-east, or use the search box above.
+            </p>
           </Reveal>
 
           {/* Detail card */}
@@ -244,7 +262,7 @@ export function StateTileMap({ heading = true }: { heading?: boolean }) {
                   {active ? (
                     <motion.div
                       key={active.code}
-                      initial={{ opacity: 0, y: 12 }}
+                      initial={fromServer ? false : { opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}

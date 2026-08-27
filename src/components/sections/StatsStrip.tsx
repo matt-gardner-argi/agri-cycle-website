@@ -18,15 +18,18 @@ export function StatsStrip({ tone = "light" }: { tone?: "light" | "dark" }) {
             <RevealItem
               key={s.label}
               className={cn(
-                "group py-9 lg:px-8 lg:py-12 lg:first:pl-0 lg:last:pr-0",
+                "py-9 lg:px-8 lg:py-12 lg:first:pl-0 lg:last:pr-0",
                 dark ? "border-white/10" : "border-ink/8",
                 "max-lg:border-b max-lg:last:border-b-0 sm:max-lg:[&:nth-child(3)]:border-b-0"
               )}
             >
+              {/* These are read-only figures. They used to light up green on
+                  hover, which is the site's link affordance and had people
+                  trying to click them. Nothing here reacts to the pointer. */}
               <p
                 className={cn(
-                  "font-display text-[clamp(2.4rem,1.6rem+2.6vw,3.4rem)] leading-none font-bold tracking-[-0.04em] transition-colors duration-500",
-                  dark ? "text-white group-hover:text-leaf-bright" : "text-ink group-hover:text-leaf-deep"
+                  "font-display text-[clamp(2.4rem,1.6rem+2.6vw,3.4rem)] leading-none font-bold tracking-[-0.04em]",
+                  dark ? "text-white" : "text-ink"
                 )}
               >
                 <Counter value={s.value} suffix={s.suffix} raw={"raw" in s ? (s.raw as boolean) : false} />

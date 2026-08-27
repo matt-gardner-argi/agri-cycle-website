@@ -37,8 +37,25 @@ const nextConfig: NextConfig = {
   // The dev server is reached over http://website.localhost:3000 locally, and
   // over the Cloudflare Tunnel hostname when sharing the dev site publicly.
   allowedDevOrigins: ["website.localhost", "localhost", "127.0.0.1", TUNNEL_HOST],
+
+  /**
+   * The dev-mode indicator is a fixed-position button. On a phone it lands on
+   * top of the navigation drawer and swallows taps meant for the links beneath
+   * it, which made a reviewer think a nav link was broken. Nothing on the page
+   * should intercept a tap, so it is off.
+   */
+  devIndicators: false,
+
   images: {
     formats: ["image/avif", "image/webp"],
+    /**
+     * The optimizer's cache key is the source URL plus width and quality, and
+     * our sources are static files that change only on deploy. The 4-hour
+     * default meant a returning visitor on a phone re-fetched every photograph
+     * on the page; 30 days is the useful lifetime without pinning a replaced
+     * image forever.
+     */
+    minimumCacheTTL: 2_592_000,
   },
   /**
    * The tunnel host is publicly reachable, so keep it out of search results.
@@ -57,6 +74,22 @@ const nextConfig: NextConfig = {
           {
             key: "X-Robots-Tag",
             value: "noindex, nofollow, noarchive, nosnippet",
+          },
+        ],
+      },
+      {
+        /**
+         * Files under `public/` are served with `max-age=0` by default, so the
+         * ~120 photographs in the media library were revalidated on every visit.
+         * Not `immutable`: these paths are stable names, not content hashes, so
+         * a replaced image has to be able to propagate — `stale-while-revalidate`
+         * lets it, without making anyone wait for it.
+         */
+        source: "/img/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=2592000, stale-while-revalidate=86400",
           },
         ],
       },

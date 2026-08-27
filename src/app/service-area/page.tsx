@@ -7,11 +7,12 @@ import { StatsStrip } from "@/components/sections/StatsStrip";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
+import { serviceArea } from "@/content/site";
 
 export const metadata: Metadata = {
   title: "Service Area",
-  description:
-    "Agri-Cycle provides services to all food waste producers throughout the United States — from Maine to California.",
+  description: serviceArea.long,
+  alternates: { canonical: "/service-area" },
 };
 
 export default function ServiceAreaPage() {
@@ -19,11 +20,11 @@ export default function ServiceAreaPage() {
     <>
       <PageHero
         eyebrow="Service area"
-        title="Maine to California"
-        highlight={["California"]}
-        image="/img/hero/tanker.jpg"
+        title="Scheduled routes in 14 states, custom programs nationally"
+        highlight={["nationally"]}
+        image="/img/site/toters.jpg"
         crumbs={[{ label: "Services", href: "/services" }, { label: "Service area" }]}
-        intro="Agri-Cycle provides services to all food waste producers throughout the United States. Curious about how we can help you achieve your food waste recycling goals? Reach out and learn more."
+        intro={`${serviceArea.long} Curious about how we can help you achieve your food waste recycling goals? Reach out and learn more.`}
         size="lg"
       >
         <Button href="/quote" size="lg" withArrow>
@@ -61,8 +62,9 @@ export default function ServiceAreaPage() {
                     make sense — environmental or otherwise.
                   </p>
                   <p className="font-semibold text-ink">
-                    From Maine to California, chances are we&apos;re passing by your business, school, or
-                    home — so keep an eye out for the Agri-Cycle logo in a neighborhood near you.
+                    Inside our 14 routed states, chances are we&apos;re already passing your
+                    business, school or home — keep an eye out for the Agri-Cycle logo. Outside them,
+                    we build the program around you rather than around a route.
                   </p>
                 </div>
               </Reveal>
@@ -103,7 +105,7 @@ export default function ServiceAreaPage() {
       <CTASection
         title="Is your state missing from this page?"
         body="Regardless of your state laws about food scraps, diverting scraps from landfill disposal reduces your trash and trash fees, reduces greenhouse gases, and creates renewable energy and farm products. Reach out today."
-        image="/img/site/longtruck.jpg"
+        image="/img/hero/eae-aerial.jpg"
       />
     </>
   );
