@@ -41,8 +41,25 @@ export function relatedPosts(slug: string, limit = 3) {
   return scored.slice(0, limit).map((s) => s.p);
 }
 
+/**
+ * WordPress gives us naive datetimes — `2023-08-04T20:30:00`, no `Z` and no
+ * offset — and JavaScript parses those as *local* time. The resulting instant
+ * therefore depends on the machine doing the parsing, so a post published after
+ * about 19:00 UTC landed on one day when Node rendered it on a UTC server and
+ * on the next day when the browser re-rendered it in the Americas. That is both
+ * a wrong date for most readers and a hydration mismatch (React error #418).
+ *
+ * Pinning the input to UTC is what makes the two agree; `timeZone: "UTC"` on the
+ * formatter only controls the output and cannot fix an instant that was already
+ * parsed differently on each side.
+ */
+export function parsePostDate(iso: string) {
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(iso);
+  return new Date(hasZone ? iso : `${iso}Z`);
+}
+
 export function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
+  return parsePostDate(iso).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",

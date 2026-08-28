@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/content/site";
-import { categories, posts } from "@/content/posts";
+import { categories, parsePostDate, posts } from "@/content/posts";
 
 /**
  * Every indexable route: the 24 static pages, the 49 blog posts, and the
@@ -48,14 +48,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticEntries = pages.map((p) => ({
     url: `${SITE_URL}${p.path}`,
     // Content-driven pages move when the blog moves; the rest are edited by hand.
-    lastModified: p.path === "/" || p.path === "/blog" ? new Date(newestPost) : undefined,
+    lastModified: p.path === "/" || p.path === "/blog" ? parsePostDate(newestPost) : undefined,
     changeFrequency: p.changeFrequency,
     priority: p.priority,
   }));
 
   const postEntries = posts.map((p) => ({
     url: `${SITE_URL}/blog/${p.slug}`,
-    lastModified: new Date(p.date),
+    lastModified: parsePostDate(p.date),
     changeFrequency: "yearly" as const,
     priority: 0.5,
   }));
