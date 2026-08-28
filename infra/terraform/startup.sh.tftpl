@@ -88,10 +88,19 @@ server {
 }
 NGINX
 
-# Compress the text payloads Next serves. HTML, JS, CSS and JSON are the bulk of
-# a page load and none of them are compressed by default on Ubuntu's nginx.
-cat >/etc/nginx/conf.d/agri-cycle-compression.conf <<'NGINX'
-gzip on;
+# Compress the text payloads Next serves. Ubuntu's nginx.conf turns gzip on but
+# leaves every tuning directive commented out, so by default only a handful of
+# MIME types are compressed and JS and CSS — the bulk of a page load — are not.
+#
+# `gzip on;` is deliberately absent below. Ubuntu already declares it, and a
+# second declaration is not a harmless override: nginx rejects it outright with
+# "gzip directive is duplicate" and refuses to start. Emit it only if this image
+# turns out not to have it.
+{
+  if ! grep -qE '^[[:space:]]*gzip[[:space:]]+on;' /etc/nginx/nginx.conf; then
+    echo 'gzip on;'
+  fi
+  cat <<'NGINX'
 gzip_vary on;
 gzip_proxied any;
 gzip_comp_level 6;
@@ -108,6 +117,14 @@ gzip_types
     text/plain
     text/xml;
 NGINX
+} >/etc/nginx/conf.d/agri-cycle-compression.conf
+
+# Never let a compression tweak take the site down: if nginx will not accept it,
+# drop it and carry on serving uncompressed.
+if ! nginx -t >/dev/null 2>&1; then
+  echo "gzip config rejected by nginx; removing it and continuing uncompressed" >&2
+  rm -f /etc/nginx/conf.d/agri-cycle-compression.conf
+fi
 
 # Brotli beats gzip by roughly 15-20% on JS and CSS. The module is optional on
 # Ubuntu, so only write the config when nginx actually has it loaded — an
@@ -191,13 +208,17 @@ if [ "$nginx_major" -gt 1 ] || { [ "$nginx_major" -eq 1 ] && [ "$nginx_minor" -g
       /etc/nginx/sites-available/agri-cycle-website
   fi
 else
-  sed -i -E 's/listen (\[::\]:)?443 ssl;/listen \1443 ssl http2;/' \
+  # Matches any 443 TLS listener, v4 or v6, and appends the parameter straight
+  # after `ssl`. An earlier version anchored on a trailing `ssl;`, which missed
+  # Certbot's IPv6 line — that one reads `listen [::]:443 ssl ipv6only=on;` and
+  # would have been left on HTTP/1.1. The `http2` guard makes it idempotent.
+  sed -i -E '/listen[^;]*443 ssl/{/http2/!s/(listen[^;]*443 ssl)/\1 http2/;}' \
     /etc/nginx/sites-available/agri-cycle-website
 fi
 
 if ! nginx -t; then
   echo "HTTP/2 nginx edit did not validate; leaving the certbot config as-is" >&2
-  sed -i -E 's/listen (\[::\]:)?443 ssl http2;/listen \1443 ssl;/' \
+  sed -i -E 's/(listen[^;]*443 ssl) http2/\1/' \
     /etc/nginx/sites-available/agri-cycle-website
   sed -i '/^\s*http2 on;$/d' /etc/nginx/sites-available/agri-cycle-website
 fi
