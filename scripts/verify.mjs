@@ -110,6 +110,13 @@ async function checkPage(context, route, vp) {
   page.on("pageerror", (err) => consoleErrors.push(`[pageerror] ${err.message}`));
   page.on("requestfailed", (req) => {
     if (IGNORE_REQUEST.some((re) => re.test(req.url()))) return;
+    // A router prefetch is speculative: Next fires it for every in-viewport
+    // link and cancels it freely, and a dynamic route answers with a redirect
+    // that the browser reports as ERR_ABORTED. None of that reaches the reader
+    // — the navigation itself still works — so it is not a failed page
+    // resource. Anything else that aborts still counts.
+    const aborted = (req.failure()?.errorText ?? "").includes("ERR_ABORTED");
+    if (aborted && req.headers()["next-router-prefetch"]) return;
     failedRequests.push(`${req.url()} — ${req.failure()?.errorText ?? "failed"}`);
   });
   page.on("response", (res) => {
