@@ -36,6 +36,13 @@ fi
 
 cd "$RELEASE_DIR"
 npm ci
+
+# `NEXT_PUBLIC_*` values are inlined at build time, not read at runtime, so this
+# has to be exported before the build rather than set on the service. It is what
+# decides whether the host invites crawlers: anything other than the production
+# domain emits `noindex` and a blanket `Disallow: /`, which is what keeps a
+# staging copy from competing with production in search.
+export NEXT_PUBLIC_SITE_URL="https://$PUBLIC_HOSTNAME"
 npm run build
 
 ln -sfn "$RELEASE_DIR" "$APP_ROOT/current"
@@ -200,7 +207,11 @@ systemctl reload nginx
 
 # Fail loudly if the origin is still HTTP/1.1 — this is the thing being fixed.
 if command -v curl >/dev/null 2>&1; then
-  negotiated="$(curl -sS -o /dev/null -w '%{http_version}' "https://$PUBLIC_HOSTNAME/" || echo "unknown")"
+  # The percent-brace below is doubled on purpose. Terraform reads a single
+  # percent-brace as the start of a template directive and rejects the whole
+  # file; doubling it emits one, which is what curl wants for its write-out
+  # format. Same reason the certbot array above is written with two dollars.
+  negotiated="$(curl -sS -o /dev/null -w '%%{http_version}' "https://$PUBLIC_HOSTNAME/" || echo "unknown")"
   echo "Negotiated HTTP version for https://$PUBLIC_HOSTNAME/: $negotiated"
 fi
 

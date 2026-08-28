@@ -59,9 +59,15 @@ variable "app_repo" {
 }
 
 variable "app_branch" {
-  description = "Git branch deployed by the VM startup script."
+  description = <<-EOT
+    Git branch deployed by the VM startup script.
+
+    This tracks whatever the review host is meant to be showing, so that
+    rebuilding the VM reproduces what is actually live rather than silently
+    reverting it. Point it back at "main" once the branch merges.
+  EOT
   type        = string
-  default     = "main"
+  default     = "feedback/website-round-1"
 }
 
 variable "cloudflare_proxied" {
